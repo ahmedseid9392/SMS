@@ -4,6 +4,9 @@ import { useNavigate } from "react-router-dom";
 export default function StudentTable({ students, onDelete }) {
   const navigate = useNavigate();
 
+
+
+
   return (
     <table className="w-full border">
       <thead className="bg-gray-100">
@@ -20,32 +23,33 @@ export default function StudentTable({ students, onDelete }) {
       </thead>
 
       <tbody>
-        {students.map((s) => (
-          <tr key={s._id} className="border-t">
-            <td>{s.username}</td>
-            <td>Default</td>
-            <td>{s.fullName}</td>
-            <td>{s.sex}</td>
-            <td>{s.grade}</td>
-            <td>{s.section}</td>
-            <td>{s.stream || "-"}</td>
-            <td className="flex gap-2">
-              <button
-                onClick={() => navigate(`/admin/students/edit/${s._id}`)}
-                className="text-blue-600"
-              >
-                <FaEdit />
-              </button>
-              <button
-                onClick={() => onDelete(s._id)}
-                className="text-red-600"
-              >
-                <FaTrash />
-              </button>
-            </td>
-          </tr>
-        ))}
-      </tbody>
+  {students?.length ? (
+    students.map((s) => (
+      <tr key={s._id}>
+        <td>{s.username}</td>
+        <td>Default</td>
+        <td>{s.fullName}</td>
+        <td>{s.sex}</td>
+        <td>{s.grade}</td>
+        <td>{s.section}</td>
+        <td>{s.stream || "-"}</td>
+        <td className="flex gap-2">
+          <button onClick={() => navigate(`/admin/students/edit/${s._id}`)}>
+            <FaEdit />
+          </button>
+          <button onClick={() => onDelete(s._id)}>
+            <FaTrash />
+          </button>
+        </td>
+      </tr>
+    ))
+  ) : (
+    <tr>
+      <td colSpan="8" className="text-center py-4">No students found</td>
+    </tr>
+  )}
+</tbody>
+
     </table>
   );
 }

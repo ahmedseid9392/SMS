@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getStudents, deleteStudent } from "../../api/studentService";
+import { getStudents , deleteStudent} from "../../api/studentService";
 import StudentTable from "../../components/students/StudentTable";
 import { FaPlus } from "react-icons/fa";
+import { useAuth } from "../../context/AuthContext";
 
 export default function Students() {
   const navigate = useNavigate();
   const [students, setStudents] = useState([]);
+   const { user } = useAuth();
   const [filters, setFilters] = useState({
     username: "",
     grade: "",
@@ -15,13 +17,13 @@ export default function Students() {
   });
 
   const loadStudents = async () => {
-    const res = await getStudents(filters);
-    setStudents(res.data);
+    const res = await getStudents(user.token);
+    setStudents(res.data.students || []);
   };
 
   useEffect(() => {
     loadStudents();
-  }, [filters]);
+  }, []);
 
   const handleDelete = async (id) => {
     await deleteStudent(id);
@@ -65,10 +67,8 @@ export default function Students() {
         </select>
       </div>
 
-      <StudentTable
-        students={students}
-        onDelete={handleDelete}
-      />
+      <StudentTable students={students || []} onDelete={handleDelete} />
+
     </div>
   );
 }

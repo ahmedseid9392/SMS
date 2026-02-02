@@ -1,21 +1,36 @@
-import api from "./axios";
+import api from "./axios"; // This already contains baseURL and axios instance
 
-export const createStudent = async (data) => {
-  return api.post("auth/students", data);
+// CREATE STUDENT
+export const createStudent = (data, token) => {
+  return api.post("/students", data, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
 };
 
-export const getStudentById = async (id) => {
-  return api.get(`/students/${id}`);
+// GET ALL STUDENTS
+export const getStudents = (token) => {
+  return api.get("/students", {
+    headers: { Authorization: `Bearer ${token}` }
+  });
 };
 
-export const updateStudent = async (id, data) => {
-  return api.put(`/students/${id}`, data);
+// UPDATE STUDENT
+export const updateStudent = (id, data, token) => {
+  return api.put(`/students/${id}`, data, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
 };
 
-export const deleteStudent = async (id) => {
-  return api.delete(`/students/${id}`);
+// GET STUDENT BY ID
+export const getStudentById = (id, token) => {
+  return api.get(`/students/${id}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
 };
 
-export const getStudents = async () => {
-  return api.get("/students");
+// DELETE STUDENT
+export const deleteStudent = (id, token) => {
+  return api.delete(`/students/${id}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
 };

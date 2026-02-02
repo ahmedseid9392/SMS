@@ -14,7 +14,9 @@ const generateUsername = async () => {
 // CREATE STUDENT
 export const createStudent = async (req, res) => {
   try {
+    console.log("📥 Incoming Student:", req.body);  
     const { fullName, sex, grade, stream, section } = req.body;
+     
 
     const username = await generateUsername();
     const password = "123456"; // default
@@ -33,16 +35,18 @@ export const createStudent = async (req, res) => {
     res.status(201).json(student);
 
   } catch (error) {
+      console.log("❌ CREATE STUDENT ERROR:", err);
     res.status(500).json({ error: error.message });
   }
 };
 
-// GET STUDENTS
+// GET STUDENTS (with filters + pagination)
 export const getStudents = async (req, res) => {
   try {
     const { grade, section, stream, username, page = 1, limit = 10 } = req.query;
 
     const query = {};
+
     if (grade) query.grade = grade;
     if (section) query.section = section;
     if (stream) query.stream = stream;
@@ -56,10 +60,12 @@ export const getStudents = async (req, res) => {
     const total = await Student.countDocuments(query);
 
     res.json({ students, total });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };
+
 
 // GET BY ID
 export const getStudentById = async (req, res) => {
@@ -96,6 +102,7 @@ export const updateStudent = async (req, res) => {
 export const deleteStudent = async (req, res) => {
   try {
     await Student.findByIdAndDelete(req.params.id);
+
     res.json({ message: "Student deleted" });
   } catch (error) {
     res.status(500).json({ message: error.message });
