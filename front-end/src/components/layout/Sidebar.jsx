@@ -1,15 +1,16 @@
 import React, { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { useTheme } from "../../context/ThemeContext";
+import { FiMenu, FiX } from "react-icons/fi";
 
 const Sidebar = () => {
   const { user } = useAuth();
+  const { theme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
 
-  const commonLinks = [
-  { to: "/profile", label: "My Profile", icon: "👤" },
-];
-  
+  const commonLinks = [{ to: "/profile", label: "My Profile", icon: "👤" }];
+
   const adminLinks = [
     ...commonLinks,
     { to: "/admin", label: "Dashboard", icon: "📊" },
@@ -36,39 +37,43 @@ const Sidebar = () => {
 
   const parentLinks = [
     ...commonLinks,
-  { to: "/parent", label: "Dashboard", icon: "📊" },
-  { to: "/parent/results", label: "Results", icon: "🏆" },
-  { to: "/parent/assignments", label: "Assignments", icon: "📄" },
-  { to: "/parent/attendance", label: "Attendance", icon: "✅" },
-  { to: "/parent/notifications", label: "Notifications", icon: "🔔" },
-];
+    { to: "/parent", label: "Dashboard", icon: "📊" },
+    { to: "/parent/results", label: "Results", icon: "🏆" },
+    { to: "/parent/assignments", label: "Assignments", icon: "📄" },
+    { to: "/parent/attendance", label: "Attendance", icon: "✅" },
+    { to: "/parent/notifications", label: "Notifications", icon: "🔔" },
+  ];
 
   const links =
     user?.role === "ADMIN"
       ? adminLinks
       : user?.role === "TEACHER"
-      ? teacherLinks:
-       user?.role === "PARENT"
+      ? teacherLinks
+      : user?.role === "PARENT"
       ? parentLinks
-      : user?.role === "STUDENT"
-      ? studentLinks
-      : "";
+      : studentLinks;
 
   return (
     <>
-      {/* Mobile menu button */}
+      {/* Toggle button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed top-20 left-4 z-50 lg:hidden bg-blue-600 text-white p-3 rounded-lg shadow-lg"
+        className="fixed top-20 left-4 z-50 lg:hidden p-3 rounded-xl shadow-lg"
+        style={{ background: "var(--card)", color: "var(--text)", border: "1px solid var(--border)" }}
       >
-        {isOpen ? "✖" : "☰"}
+        {isOpen ? <FiX size={22} /> : <FiMenu size={22} />}
       </button>
 
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 w-64 bg-gray-900 text-white transform transition-transform duration-300 lg:translate-x-0 lg:static lg:inset-0 ${
+        className={`fixed inset-y-0 left-0 z-40 w-64 transition-transform duration-300 lg:translate-x-0 lg:static ${
           isOpen ? "translate-x-0" : "-translate-x-full"
-        } pt-20 lg:pt-0`}
+        }`}
+        style={{
+          background: "var(--card)",
+          color: "var(--text)",
+          borderRight: "1px solid var(--border)",
+        }}
       >
         <div className="h-full px-6 py-8 overflow-y-auto">
           <nav className="space-y-2">
@@ -76,14 +81,19 @@ const Sidebar = () => {
               <NavLink
                 key={link.to}
                 to={link.to}
+                onClick={() => setIsOpen(false)}
                 className={({ isActive }) =>
-                  `flex items-center space-x-3 px-4 py-3 rounded-lg transition ${
+                  `flex items-center space-x-3 px-4 py-3 rounded-lg transition-all transform ${
                     isActive
-                      ? "bg-blue-600 text-white shadow-md"
-                      : "hover:bg-gray-800"
+                      ? "scale-[1.02]"
+                      : "hover:scale-[1.01]"
                   }`
                 }
-                onClick={() => setIsOpen(false)}
+                style={({ isActive }) => ({
+                  background: isActive ? "var(--primary)" : "var(--bg)",
+                  color: isActive ? "#fff" : "var(--text)",
+                  border: "1px solid var(--border)",
+                })}
               >
                 <span className="text-2xl">{link.icon}</span>
                 <span className="font-medium">{link.label}</span>
@@ -93,11 +103,12 @@ const Sidebar = () => {
         </div>
       </aside>
 
-      {/* Overlay for mobile */}
+      {/* Overlay */}
       {isOpen && (
         <div
           onClick={() => setIsOpen(false)}
-          className="fixed inset-0 bg-black opacity-50 z-30 lg:hidden"
+          className="fixed inset-0 z-30 lg:hidden"
+          style={{ background: "rgba(0,0,0,0.4)" }}
         />
       )}
     </>

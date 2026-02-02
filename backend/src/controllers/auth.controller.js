@@ -1,44 +1,54 @@
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import Student from "../models/Student.model.js";
+import Teacher from "../models/Teacher.model.js";
+import Parent from "../models/Parent.model.js";
 import User from "../models/User.model.js";
-import generateToken from "../utils/generateToken.js";
 
-// LOGIN
 export const loginUser = async (req, res) => {
   try {
-     const { username, password } = req.body;
+    const { username, password } = req.body;
 
-  const user = await User.findOne({ username });
+    // Check all collections for a user with this username
+    let user =
+      (await User.findOne({ username })) ||
+      (await Teacher.findOne({ username })) ||
+      (await Student.findOne({ username })) ||
+      (await Parent.findOne({ username }));
 
-  if (user && (await user.matchPassword(password))) {
-    res.json({
-      _id: user._id,
-      name: user.name,
-      username: user.username,
+    if (!user)
+      return res.status(404).json({ message: "User not found" });
+
+    // Validate password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch)
+      return res.status(400).json({ message: "Incorrect password" });
+// Create JWT
+    const token = jwt.sign(
+      {
+        id: user._id,
+        role: user.role,
+        username: user.username,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+    const userData = {
+      id: user._id,
+      name: user.fullName || user.name,
       role: user.role,
-      isFirstLogin: user.isFirstLogin,
-      token: generateToken(user._id),
+      username: user.username,
+      mustChangePassword: user.mustChangePassword,
+    };
+
+    res.json({
+      message: "Login successful",
+       token,
+      user: userData,
     });
-  } else {
-    res.status(401).json({ message: "Invalid username or password" });
-  }
 
-      
-  } 
-  catch (error) {
-    console.log(error);
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).json({ message: "Login error" });
   }
 };
-
-// CHANGE PASSWORD
-export const changePassword = async (req, res) => {
-  const { newPassword } = req.body;
-
-  const user = await User.findById(req.user._id);
-  user.password = newPassword;
-  user.isFirstLogin = false;
-
-  await user.save();
-
-  res.json({ message: "Password updated successfully" });
-};
-
- 

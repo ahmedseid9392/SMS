@@ -1,12 +1,13 @@
 import React from "react";
 import Layout from "../../components/layout/Layout";
-
+import ThemedCard from "../../components/ui/ThemedCard";
 const StudentDashboard = () => {
   return (
     <Layout>
       <div className="max-w-6xl mx-auto">
+        <ThemedCard>
         <h1 className="text-4xl font-bold text-gray-800 mb-8">Student Dashboard</h1>
-
+          </ThemedCard>
         <div className="grid md:grid-cols-2 gap-8">
           <div className="bg-white p-8 rounded-xl shadow-lg">
             <h2 className="text-2xl font-semibold mb-4">🏆 Recent Results</h2>

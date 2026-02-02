@@ -1,12 +1,17 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-
-
+import { FaUser, FaLock } from "react-icons/fa";
+import { useTheme } from "../../context/ThemeContext";
+import ThemeToggle from "../../landing-pages/ThemeToggle";
+import logo from "../../assets/react.svg";
+import {  ArrowLeft } from "lucide-react";
 const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+
   const { login, user } = useAuth();
+  const { theme } = useTheme();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -15,48 +20,107 @@ const Login = () => {
   };
 
   useEffect(() => {
-    if (user ) {
+    if (!user) return;
       if (user.role === "ADMIN") navigate("/admin", { replace: true });
-      else if (user.role === "TEACHER") navigate("/teacher", { replace: true });
-      else if (user.role === "STUDENT") navigate("/student", { replace: true });
-      else if (user.role === "PARENT") navigate("/parent", { replace: true });
-    }
+      if (user.role === "TEACHER") navigate("/teacher", { replace: true });
+      if (user.role === "STUDENT") navigate("/student", { replace: true });
+      if (user.role === "PARENT") navigate("/parent", { replace: true });
+    
   }, [user, navigate]);
 
   return (
+    <div
+      className="min-h-screen flex items-center justify-center px-4 transition-all duration-500"
+      style={{
+        background: "var(--bg)",
+        color: "var(--text)",
+      }}
+    >
+      {/* Theme Toggle */}
+      <div className="absolute top-5 right-5">
+        <ThemeToggle />
+      </div>
 
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <form onSubmit={handleSubmit} className="bg-white p-8 rounded shadow w-96">
-        <h2 className="text-2xl font-bold mb-6 text-center">Login</h2>
+      <form
+        onSubmit={handleSubmit}
+        className="w-full max-w-md p-8 rounded-2xl shadow-xl transition-all duration-500
+                   hover:shadow-2xl hover:-translate-y-1"
+        style={{ background: "var(--card)", border: "1px solid var(--border)" }}
+      >
+        {/* Logo + Title */}
+        <div className="text-center mb-6">
+          <button
+            onClick={() => navigate("/")}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-400 mx-2 hover:bg-gray-300 rounded"
+          >
+            <ArrowLeft size={18} /> Back
+          </button> <img
+            src={logo}
+            className="h-16 w-16 mx-auto mb-3 drop-shadow-lg transition-all duration-300 hover:scale-110"
+            alt="School Logo"
+          />
 
-        <input
-          type="text"
-          placeholder="Username"
-          className="w-full border p-2 mb-4 rounded"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          required
-        />
+          <h1 className="text-3xl font-bold">Green Valley High School</h1>
+          <p className="text-sm opacity-70 mt-1">School Management System</p>
+        </div>
 
-        <input
-          type="text"
-          placeholder="password"
-          className="w-full border p-2 mb-6 rounded"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
+        <h2 className="text-xl font-semibold mb-6 text-center">Login</h2>
 
-        <button className="w-full bg-blue-600 text-white py-2 rounded">
+        {/* Username */}
+        <div
+          className="flex items-center gap-3 border rounded-xl px-4 py-2 mb-4 transition-all duration-300
+                     focus-within:border-blue-500"
+          style={{ background: "var(--card)", border: "1px solid var(--border)" }}
+        >
+          <FaUser className="opacity-70" />
+          <input
+            type="text"
+            placeholder="Enter Username"
+            className="w-full bg-transparent outline-none"
+            style={{ color: "var(--text)" }}
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+          />
+        </div>
+
+        {/* Password */}
+        <div
+          className="flex items-center gap-3 border rounded-xl px-4 py-2 mb-6 transition-all duration-300
+                     focus-within:border-blue-500"
+          style={{ background: "var(--card)", border: "1px solid var(--border)" }}
+        >
+          <FaLock className="opacity-70" />
+          <input
+            type="password"
+            placeholder="Enter Password"
+            className="w-full bg-transparent outline-none"
+            style={{ color: "var(--text)" }}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        </div>
+
+        {/* Submit Button */}
+        <button
+          className="w-full py-3 rounded-xl font-semibold text-lg shadow-md transition-all duration-300
+                     hover:scale-105 hover:shadow-xl"
+          style={{
+            background: "var(--text)",
+            color: "var(--bg)",
+          }}
+        >
           Login
         </button>
 
-        <p className="text-sm mt-4 text-gray-600 text-center">
-          GVA2018011 | GVT2018011 | GVS2018011 | GVP2018011 |ChangeMe@123
+        {/* Sample Demo Accounts */}
+        <p className="text-sm mt-5 text-center opacity-70">
+          GVA2018011 | GVT2018011 | GVS2018011 | GVP2018011  
+          <br /> Default Password: <strong>ChangeMe@123</strong>
         </p>
       </form>
     </div>
-    
   );
 };
 

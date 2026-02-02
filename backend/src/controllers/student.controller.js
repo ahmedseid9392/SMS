@@ -1,5 +1,5 @@
 import Student from "../models/Student.model.js";
-
+import bcrypt from "bcryptjs";
 // AUTO GENERATE USERNAME → GVS2024XXX
 const generateUsername = async () => {
   const lastStudent = await Student.findOne().sort({ createdAt: -1 });
@@ -11,35 +11,47 @@ const generateUsername = async () => {
   return `GVS2024${String(nextNumber).padStart(3, "0")}`;
 };
 
-// CREATE STUDENT
 export const createStudent = async (req, res) => {
   try {
-    console.log("📥 Incoming Student:", req.body);  
-    const { fullName, sex, grade, stream, section } = req.body;
-     
-
-    const username = await generateUsername();
-    const password = "123456"; // default
-
-    const student = await Student.create({ // new Student and remove await and create
-      username,
-      password,
+    const {
       fullName,
       sex,
       grade,
-      stream,
       section,
-      role: "STUDENT"
-    });
- //add await student.save()
-    res.status(201).json(student);
+      stream,
+    } = req.body;
 
+    // Auto-generate username → Example: GVS + timestamp
+    const username = await generateUsername;
+
+    // Default password
+    const defaultPassword = "ChangeMe@123";
+    const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+
+    const student = new Student({
+      username,
+      password: hashedPassword,
+      fullName,
+      sex,
+      grade,
+      section,
+      stream: grade >= 11 ? stream : undefined,
+      mustChangePassword: true,
+    });
+
+    await student.save();
+
+    res.status(201).json({
+      message: "Student registered successfully",
+      username,
+      defaultPassword,
+      id: student._id,
+    });
   } catch (error) {
-      console.log("❌ CREATE STUDENT ERROR:", err);
-    res.status(500).json({ error: error.message });
+    console.error("Register Student Error:", error);
+    res.status(500).json({ message: "Failed to register student" });
   }
 };
-
 // GET STUDENTS (with filters + pagination)
 export const getStudents = async (req, res) => {
   try {

@@ -1,10 +1,8 @@
 import express from "express";
-import { loginUser, changePassword } from "../controllers/auth.controller.js";
-import protect from "../middleware/auth.middleware.js";
+import { loginUser } from "../controllers/auth.controller.js";
 
 const router = express.Router();
 
 router.post("/login", loginUser);
-router.put("/change-password", protect, changePassword);
 
 export default router;

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-
+import toast from "react-hot-toast";
 import {
   createStudent,
   updateStudent,
@@ -32,23 +32,23 @@ export default function StudentFormModal() {
 
   const submit = async () => {
   if (!form.fullName || !form.sex || !form.grade || !form.section) {
-    alert("Please fill all required fields.");
+    toast.error("Please fill all required fields.");
     return;
   }
 
   if ((form.grade == 11 || form.grade == 12) && !form.stream) {
-    alert("Stream is required for grade 11 and 12.");
+    toast.error("Stream is required for grade 11 and 12.");
     return;
   }
 
   try {
     if (id) await updateStudent(id, form, user.token);
     else await createStudent(form, user.token);
-
+    toast.success("Student updated successfully!");
     navigate("/admin/students");
   } catch (err) {
     console.error(err);
-    alert("Failed to save student.");
+    toast.error("Registration failed!");
   }
 };
 

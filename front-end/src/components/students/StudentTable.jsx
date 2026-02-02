@@ -35,10 +35,10 @@ export default function StudentTable({ students, onDelete }) {
         <td>{s.stream || "-"}</td>
         <td className="flex gap-2">
           <button onClick={() => navigate(`/admin/students/edit/${s._id}`)}>
-            <FaEdit />
+            <FaEdit className="text-blue-400"/>
           </button>
           <button onClick={() => onDelete(s._id)}>
-            <FaTrash />
+            <FaTrash className="text-red-400"/>
           </button>
         </td>
       </tr>

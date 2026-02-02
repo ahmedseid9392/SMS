@@ -1,32 +1,35 @@
-import { createContext, useContext, useState } from "react";
 import api from "../api/axios";
+import { createContext, useState, useContext } from "react";
 
 const AuthContext = createContext();
+export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
 
   const login = async (username, password) => {
     try {
-      const { data } = await api.post("/auth/login", {
+      const res = await api.post("/auth/login", {
         username,
         password,
       });
 
-      setUser(data);
-      localStorage.setItem("token", data.token);
+     localStorage.setItem("token", res.data.token);
+    localStorage.setItem("user", JSON.stringify(res.data.user));
+
+    setUser(res.data.user);
+
+      return true;
     } catch (error) {
-      console.error("Login error:", error);
-      throw new Error(
-        error.response?.data?.message || "Invalid login"
-      );
+      alert("Invalid username or password");
+      return false;
     }
   };
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem("token");
-    window.location.href = "/login";
+     localStorage.removeItem("token");
+    localStorage.removeItem("user");
   };
 
   return (
@@ -35,5 +38,3 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
-
-export const useAuth = () => useContext(AuthContext);

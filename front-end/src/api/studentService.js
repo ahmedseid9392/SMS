@@ -8,11 +8,13 @@ export const createStudent = (data, token) => {
 };
 
 // GET ALL STUDENTS
-export const getStudents = (token) => {
+export const getStudents = async (token, filters = {}) => {
   return api.get("/students", {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { Authorization: `Bearer ${token}` },
+    params: filters
   });
 };
+
 
 // UPDATE STUDENT
 export const updateStudent = (id, data, token) => {

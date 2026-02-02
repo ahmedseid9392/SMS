@@ -1,12 +1,14 @@
 import React from "react";
+import ThemedCard from "../../components/ui/ThemedCard";
 import Layout from "../../components/layout/Layout";
 
 const AdminDashboard = () => {
   return (
     <Layout>
       <div className="max-w-6xl mx-auto">
+        <ThemedCard>
         <h1 className="text-4xl font-bold text-gray-800 mb-8">Admin Dashboard</h1>
-
+          </ThemedCard>
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
           <div className="bg-white p-6 rounded-xl shadow-lg text-center">
             <h3 className="text-3xl font-bold text-blue-600">1,240</h3>
