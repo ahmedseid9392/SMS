@@ -1,36 +1,26 @@
 import api from "./axios";
 
 // GET all courses
-export const getCourses = (token) => {
-  return api.get("/courses", {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+export const getCourses = async () => {
+  return api.get("/courses");
 };
 
-// GET by ID
-export const getCourseById = (id, token) => {
-  return api.get(`/courses/${id}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+// GET single course by ID
+export const getCourseById = async (id) => {
+  return api.get(`/courses/${id}`);
 };
 
-// REGISTER course
-export const createCourse = (courseData, token) => {
-  return api.post("/courses/register", courseData, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+// CREATE course
+export const createCourse = async (courseData) => {
+  return api.post("/courses", courseData);
 };
 
 // UPDATE course
-export const updateCourse = (id, courseData, token) => {
-  return api.put(`/courses/${id}`, courseData, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+export const updateCourse = async (id, courseData) => {
+  return api.put(`/courses/${id}`, courseData);
 };
 
 // DELETE course
-export const deleteCourse = (id, token) => {
-  return api.delete(`/courses/${id}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+export const deleteCourse = async (id) => {
+  return api.delete(`/courses/${id}`);
 };

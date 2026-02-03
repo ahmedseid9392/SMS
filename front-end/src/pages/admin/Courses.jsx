@@ -1,73 +1,75 @@
-import { useEffect, useState } from "react";
-import Layout from "../../components/layout/Layout";
-import ThemedCard from "../../components/ui/ThemedCard";
-import CourseTable from "../../components/courses/CourseTable";
-import CourseFormModal from "../../components/courses/CourseFormModal";
+import React, { use, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { getCourses, deleteCourse } from "../../api/courseService";
-import { Plus } from "lucide-react";
+import { ArrowLeft, Plus } from "lucide-react";
+import CourseTable from "../../components/courses/CourseTable";
 import { useAuth } from "../../context/AuthContext";
-import toast from "react-hot-toast";
 
-export default function Courses() {
-  const { user } = useAuth();
+const Courses = () => {
   const [courses, setCourses] = useState([]);
-  const [showModal, setShowModal] = useState(false);
-  const [editingCourse, setEditingCourse] = useState(null);
+  const navigate = useNavigate();
+  const { user } = useAuth();
+   console.log("TOKEN:", localStorage.getItem("token"));
 
   const loadCourses = async () => {
-    const res = await getCourses(user.token);
-    setCourses(res.data || []);
+  try {
+    const res = await getCourses();
+    setCourses(res.courses || []);
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this course?")) return;
+
+    await deleteCourse(id);
+    loadCourses();
+  };
+
+  const handleEdit = (course) => {
+    navigate(`/admin/courses/edit/${course._id}`);
   };
 
   useEffect(() => {
     loadCourses();
   }, []);
 
-  const handleDelete = async (id) => {
-    await deleteCourse(id, user.token);
-    toast.success("Course deleted!");
-    loadCourses();
-  };
-
   return (
-    <Layout>
-      <div className="max-w-6xl mx-auto">
-        <ThemedCard>
-          <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold dark:text-white">Courses</h1>
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-4">
+        <button
+          onClick={() => navigate("/admin")}
+          className="flex items-center gap-2 px-4 py-2 
+           bg-blue-200 dark:bg-blue-800 
+           hover:bg-blue-300 dark:hover:bg-blue-700 
+           text-gray-900 dark:text-white 
+           rounded"
+        >
+          <ArrowLeft size={18} /> Back
+        </button>
 
-            <button
-              onClick={() => {
-                setEditingCourse(null);
-                setShowModal(true);
-              }}
-              className="bg-blue-600 text-white px-4 py-2 rounded flex items-center gap-2"
-            >
-              <Plus size={18} /> Add Course
-            </button>
-          </div>
-        </ThemedCard>
+        <h1 className="text-3xl font-bold">Courses</h1>
 
-        <div className="mt-6 border rounded-lg dark:border-gray-700 overflow-auto">
-          <CourseTable
-            courses={courses}
-            onEdit={(c) => {
-              setEditingCourse(c);
-              setShowModal(true);
-            }}
-            onDelete={handleDelete}
-          />
-        </div>
+        <button
+          onClick={() => navigate("/admin/courses/add")}
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+        >
+         
 
-        {showModal && (
-          <CourseFormModal
-            course={editingCourse}
-            token={user.token}
-            onSaved={loadCourses}
-            onClose={() => setShowModal(false)}
-          />
-        )}
+          <Plus size={18} /> Add Course
+        </button>
       </div>
-    </Layout>
+
+      <CourseTable
+        courses={courses}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+      />
+    </div>
   );
-}
+};
+
+export default Courses;

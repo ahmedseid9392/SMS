@@ -1,109 +1,154 @@
-import { useState, useEffect } from "react";
-import { createCourse, updateCourse } from "../../api/courseService";
+import React, { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import {
+  createCourse,
+  updateCourse,
+  getCourseById
+} from "../../api/courseService";
 import { getTeachers } from "../../api/teacherService";
-import toast from "react-hot-toast";
 
-export default function CourseFormModal({ onClose, course, token, onSaved }) {
-  const [teachers, setTeachers] = useState([]);
+const CourseForm = () => {
+  const { id } = useParams(); // if exists → EDIT MODE
+  const navigate = useNavigate();
+
+  //const [teachers, setTeachers] = useState([]);
+
   const [form, setForm] = useState({
     name: "",
-    gradeLevel: "",
-    stream: "",
-    teacher: "",
+    grade: "",
+    stream: ""
+   
   });
 
+  const isEdit = Boolean(id);
+
+  // LOAD TEACHERS
+  // useEffect(() => {
+  //   const loadTeachers = async () => {
+  //     const data = await getTeachers();
+  //     setTeachers(data.teachers);
+  //   };
+  //   loadTeachers();
+  // }, []);
+
+  // LOAD COURSE IF EDITING
   useEffect(() => {
-    if (course) setForm(course);
-    loadTeachers();
-  }, [course]);
-
-  const loadTeachers = async () => {
-    const res = await getTeachers(token);
-    setTeachers(res.data || []);
-  };
-
-  const handleSubmit = async () => {
-    if (!form.name || !form.gradeLevel || !form.teacher) {
-      toast.error("Please fill all required fields");
-      return;
+    if (isEdit) {
+      (async () => {
+        const data = await getCourseById(id);
+        setForm({
+          name: data.name,
+          grade: data.grade,
+          stream: data.stream || ""
+          //teacher: data.teacher?._id || ""
+        });
+      })();
     }
+  }, [id]);
 
-    if ((form.gradeLevel == 11 || form.gradeLevel == 12) && !form.stream) {
-      toast.error("Stream is required for grade 11 & 12");
-      return;
-    }
+  // UPDATE FORM
+  const handleChange = (e) =>
+    setForm({ ...form, [e.target.name]: e.target.value });
 
-    try {
-      if (course) {
-        await updateCourse(course._id, form, token);
-      } else {
-        await createCourse(form, token);
-      }
-      toast.success("Course saved!");
-      onSaved();
-      onClose();
-    } catch {
-      toast.error("Failed to save course");
-    }
+  // SUBMIT
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (isEdit) await updateCourse(id, form);
+    else await createCourse(form);
+
+    navigate("/admin/courses");
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex justify-center items-center">
-      <div className="p-6 bg-white dark:bg-gray-800 rounded-md w-[400px]">
-        <h2 className="text-xl font-bold mb-4 dark:text-white">
-          {course ? "Edit Course" : "Add Course"}
-        </h2>
+    <div className="p-6 max-w-xl mx-auto">
+      <h1 className="text-3xl font-bold mb-4">
+        {isEdit ? "Edit Course" : "New Course"}
+      </h1>
 
-        <input
-          className="w-full p-2 border rounded mb-2 dark:bg-gray-700 dark:text-white"
-          placeholder="Course Name"
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-        />
+      <form onSubmit={handleSubmit} className="grid gap-4">
 
-        <input
-          className="w-full p-2 border rounded mb-2 dark:bg-gray-700 dark:text-white"
-          placeholder="Grade Level"
-          type="number"
-          value={form.gradeLevel}
-          onChange={(e) => setForm({ ...form, gradeLevel: e.target.value })}
-        />
+        <div>
+          <label className="font-semibold">Course Name</label>
+          <input
+            name="name"
+            value={form.name}
+            onChange={handleChange}
+            className="w-full border p-2 rounded"
+            required
+          />
+        </div>
 
-        {(form.gradeLevel == 11 || form.gradeLevel == 12) && (
+        <div>
+          <label className="font-semibold">Grade</label>
           <select
-            className="w-full p-2 border rounded mb-2 dark:bg-gray-700 dark:text-white"
-            value={form.stream}
-            onChange={(e) => setForm({ ...form, stream: e.target.value })}
+            name="grade"
+            value={form.grade}
+            onChange={handleChange}
+            className="w-full border p-2 rounded"
+            required
           >
-            <option value="">Select Stream</option>
-            <option value="Natural">Natural</option>
-            <option value="Social">Social</option>
+            <option value="">Select grade</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+            <option value="11">11</option>
+            <option value="12">12</option>
           </select>
+        </div>
+
+        {(form.grade === "11" || form.grade === "12") && (
+          <div>
+            <label className="font-semibold">Stream</label>
+            <select
+              name="stream"
+              value={form.stream}
+              onChange={handleChange}
+              className="w-full border p-2 rounded"
+              required
+            >
+              <option value="">Select stream</option>
+              <option value="Natural">Natural</option>
+              <option value="Social">Social</option>
+            </select>
+          </div>
         )}
 
-        <select
-          className="w-full p-2 border rounded mb-4 dark:bg-gray-700 dark:text-white"
-          value={form.teacher}
-          onChange={(e) => setForm({ ...form, teacher: e.target.value })}
-        >
-          <option value="">Assign Teacher</option>
-          {teachers.map((t) => (
-            <option key={t._id} value={t._id}>
-              {t.firstName} {t.lastName}
-            </option>
-          ))}
-        </select>
+        {/* <div>
+          <label className="font-semibold">Teacher</label>
+          <select
+            name="teacher"
+            value={form.teacher}
+            onChange={handleChange}
+            className="w-full border p-2 rounded"
+          >
+            <option value="">No Teacher</option>
+            {teachers.map((t) => (
+              <option key={t._id} value={t._id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+        </div> */}
 
-        <div className="flex justify-end gap-3">
-          <button onClick={onClose}>Cancel</button>
+        <div className="flex gap-3 mt-4">
           <button
-            onClick={handleSubmit}
-            className="bg-blue-600 text-white px-4 py-2 rounded"
+            type="submit"
+            className="bg-blue-600 text-white px-5 py-2 rounded-lg"
           >
             Save
           </button>
+
+          <button
+            type="button"
+            onClick={() => navigate("/admin/courses")}
+            className="bg-gray-400 text-white px-5 py-2 rounded-lg"
+          >
+            Cancel
+          </button>
         </div>
-      </div>
+      </form>
     </div>
   );
-}
+};
+
+export default CourseForm;

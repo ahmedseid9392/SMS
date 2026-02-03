@@ -3,6 +3,7 @@ import User from "../models/User.model.js";
 import Student from "../models/Student.model.js";
 import Teacher from "../models/Teacher.model.js";
 import Parent from "../models/Parent.model.js";
+import Course from "../models/Courses.js";
 
 const protect = async (req, res, next) => {
   try {
@@ -18,7 +19,8 @@ const protect = async (req, res, next) => {
       (await User.findById(decoded.id)) ||
       (await Teacher.findById(decoded.id)) ||
       (await Student.findById(decoded.id)) ||
-      (await Parent.findById(decoded.id));
+      (await Parent.findById(decoded.id)) ;
+      
 
     if (!user)
       return res.status(401).json({ message: "User not found in database" });

@@ -1,12 +1,12 @@
 import Course from "../models/Courses.js";
 import Teacher from "../models/Teacher.model.js";
 
-// ======================= CREATE COURSE ============================
+//CREATE COURSE 
 export const createCourse = async (req, res) => {
   try {
     const { name, gradeLevel, stream, teacher } = req.body;
 
-    if (!name || !gradeLevel || !teacher) {
+    if (!name || !gradeLevel ) {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
@@ -15,8 +15,8 @@ export const createCourse = async (req, res) => {
       return res.status(400).json({ message: "Stream is required for grade 11 & 12" });
     }
 
-    const checkTeacher = await Teacher.findById(teacher);
-    if (!checkTeacher) return res.status(404).json({ message: "Teacher not found" });
+    //const checkTeacher = await Teacher.findById(teacher);
+    //if (!checkTeacher) return res.status(404).json({ message: "Teacher not found" });
 
     const course = await Course.create({
       name,
@@ -32,7 +32,7 @@ export const createCourse = async (req, res) => {
   }
 };
 
-// ======================= GET ALL COURSES ============================
+// GET ALL COURSES 
 export const getCourses = async (req, res) => {
   try {
     const courses = await Course.find().populate("teacher", "firstName lastName email phone");
@@ -43,7 +43,7 @@ export const getCourses = async (req, res) => {
   }
 };
 
-// ======================= GET COURSE BY ID ============================
+//  GET COURSE BY ID 
 export const getCourseById = async (req, res) => {
   try {
     const course = await Course.findById(req.params.id).populate("teacher");
