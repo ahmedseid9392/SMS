@@ -16,7 +16,13 @@ const studentSchema = new mongoose.Schema(
         return this.grade === 11 || this.grade === 12;
       },
     },
-    courses: [String],
+   courses: [
+  {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Course"
+  }
+],
+
     mustChangePassword: { type: Boolean, default: true },
   },
   { timestamps: true }

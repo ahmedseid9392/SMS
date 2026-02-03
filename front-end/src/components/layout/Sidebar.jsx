@@ -16,6 +16,7 @@ const Sidebar = () => {
     { to: "/admin", label: "Dashboard", icon: "📊" },
     { to: "/admin/students", label: "Students", icon: "👥" },
     { to: "/admin/teachers", label: "Teachers", icon: "👩‍🏫" },
+    { to: "/admin/courses", label: "Courses", icon: "👩‍🏫" },
     { to: "/admin/classes", label: "Classes", icon: "🏫" },
   ];
 

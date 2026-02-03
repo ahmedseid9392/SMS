@@ -8,7 +8,7 @@ const AdminDashboard = () => {
       <div className="max-w-6xl mx-auto">
 
         <ThemedCard>
-          <h1 className="text-4xl font-bold text-gray-800 dark:text-white mb-8">
+          <h1 className="text-4xl font-bold text-black-900 dark:text-white mb-8">
             Admin Dashboard
           </h1>
         </ThemedCard>

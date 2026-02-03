@@ -3,6 +3,9 @@ import cors from "cors";
 import authRoutes from "./routes/auth.routes.js";
 import studentRouter from "./routes/student.routes.js";
 import teacherRoutes from "./routes/teacherRoutes.js";
+import courseRoutes from "./routes/courseRoutes.js";
+
+
 
 
 
@@ -18,6 +21,7 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/students", studentRouter);
 app.use("/api/teachers", teacherRoutes);
+app.use("/api/courses", courseRoutes);
 
 // TEST ROUTE (IMPORTANT)
 app.get("/api/test", (req, res) => {

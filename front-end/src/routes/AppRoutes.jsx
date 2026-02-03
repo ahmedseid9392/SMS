@@ -7,7 +7,11 @@ import ProtectedRoute from "./ProtectedRoute";
 
 import AdminDashboard from "../pages/admin/Dashboard";
 import Students from "../pages/admin/Students";
+import Teachers from "../pages/admin/Teacher";
+import Courses from "../pages/admin/Courses";
 import StudentFormModal from "../components/students/StudentFormModal"
+import TeacherForm from "../components/teachers/TeacherForm"
+import CourseFormModal from "../components/courses/CourseFormModal"
 
 import TeacherDashboard from "../pages/teacher/Dashboard";
 import Attendance from "../pages/teacher/Attendance";
@@ -46,6 +50,22 @@ const AppRoutes = () => (
     </ProtectedRoute>
   }
 />
+     <Route
+  path="/admin/teachers"
+  element={
+    <ProtectedRoute>
+      <Teachers/>
+    </ProtectedRoute>
+  }
+/>
+     <Route
+  path="/admin/courses"
+  element={
+    <ProtectedRoute>
+      <Courses/>
+    </ProtectedRoute>
+  }
+/>
 
 <Route
   path="/admin/students/add"
@@ -61,6 +81,40 @@ const AppRoutes = () => (
   element={
     <ProtectedRoute>
       <StudentFormModal />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/admin/teachers/add"
+  element={
+    <ProtectedRoute>
+      <TeacherForm />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/admin/teachers/edit/:id"
+  element={
+    <ProtectedRoute>
+      <TeacherForm />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/admin/courses/add"
+  element={
+    <ProtectedRoute>
+      <CourseFormModal/>
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/admin/courses/edit/:id"
+  element={
+    <ProtectedRoute>
+     <CourseFormModal/>
     </ProtectedRoute>
   }
 />
