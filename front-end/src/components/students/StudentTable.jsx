@@ -1,55 +1,63 @@
-import { FaEdit, FaTrash } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
+import { Trash2, Pencil } from "lucide-react";
 
-export default function StudentTable({ students, onDelete }) {
-  const navigate = useNavigate();
-
-
-
-
+export default function StudentTable({ students, onDelete, onEdit }) {
   return (
-    <table className="w-full border">
-      <thead className="bg-gray-100">
-        <tr>
-          <th>Username</th>
-          <th>Password</th>
-          <th>Full Name</th>
-          <th>Sex</th>
-          <th>Grade</th>
-          <th>Section</th>
-          <th>Stream</th>
-          <th>Actions</th>
+    <table className="w-full border-collapse">
+      <thead>
+        <tr className="bg-gray-200 dark:bg-gray-700">
+          <th className="p-3 border dark:border-gray-600 text-left ">Username</th>
+          <th className="p-3 border dark:border-gray-600 text-left">Full Name</th>
+          <th className="p-3 border dark:border-gray-600 text-left">Grade</th>
+          <th className="p-3 border dark:border-gray-600 text-left">Section</th>
+          <th className="p-3 border dark:border-gray-600 text-left">Stream</th>
+          <th className="p-3 border dark:border-gray-600 text-center">Actions</th>
         </tr>
       </thead>
 
       <tbody>
-  {students?.length ? (
-    students.map((s) => (
-      <tr key={s._id}>
-        <td>{s.username}</td>
-        <td>Default</td>
-        <td>{s.fullName}</td>
-        <td>{s.sex}</td>
-        <td>{s.grade}</td>
-        <td>{s.section}</td>
-        <td>{s.stream || "-"}</td>
-        <td className="flex gap-2">
-          <button onClick={() => navigate(`/admin/students/edit/${s._id}`)}>
-            <FaEdit className="text-blue-400"/>
-          </button>
-          <button onClick={() => onDelete(s._id)}>
-            <FaTrash className="text-red-400"/>
-          </button>
-        </td>
-      </tr>
-    ))
-  ) : (
-    <tr>
-      <td colSpan="8" className="text-center py-4">No students found</td>
-    </tr>
-  )}
-</tbody>
+        {students.length === 0 ? (
+          <tr>
+            <td colSpan="6" className="text-center p-4">
+              No students found.
+            </td>
+          </tr>
+        ) : (
+          students.map((s, i) => (
+            <tr
+              key={s._id}
+              className={`${
+                i % 2 === 0
+                  ? "bg-white dark:bg-gray-500"
+                  : "bg-gray-100 dark:bg-gray-600"
+              } hover:bg-gray-200 dark:hover:bg-gray-700`}
+            >
+              <td className="p-3">{s.username}</td>
+              <td className="p-3">{s.fullName}</td>
+              <td className="p-3">{s.grade}</td>
+              <td className="p-3">{s.section}</td>
+              <td className="p-3">{s.stream || "-"}</td>
 
+              <td className="p-3 text-center flex justify-center gap-3">
+                {/* Edit */}
+                <button
+                  onClick={() => onEdit && onEdit(s._id)}
+                  className="p-2 rounded bg-blue-500 dark:bg-blue-700 text-white hover:bg-blue-600 dark:hover:bg-blue-600"
+                >
+                  <Pencil size={18} />
+                </button>
+
+                {/* Delete */}
+                <button
+                  onClick={() => onDelete(s._id)}
+                  className="p-2 rounded bg-red-500 dark:bg-red-700 text-white hover:bg-red-600 dark:hover:bg-red-600"
+                >
+                  <Trash2 size={18} />
+                </button>
+              </td>
+            </tr>
+          ))
+        )}
+      </tbody>
     </table>
   );
 }

@@ -1,15 +1,22 @@
 import Student from "../models/Student.model.js";
 import bcrypt from "bcryptjs";
-// AUTO GENERATE USERNAME → GVS2024XXX
-const generateUsername = async () => {
-  const lastStudent = await Student.findOne().sort({ createdAt: -1 });
+const generateStudentUsername = async () => {
+  const lastStudent = await Student.findOne({ role: "STUDENT" })
+    .sort({ createdAt: -1 });
 
-  const nextNumber = lastStudent
-    ? parseInt(lastStudent.username.slice(8)) + 1
-    : 1;
+  const prefix = "GVS2024";
 
-  return `GVS2024${String(nextNumber).padStart(3, "0")}`;
+  const lastNumber = lastStudent
+    ? parseInt(lastStudent.username.replace(prefix, "")) || 0
+    : 0;
+
+  const nextNumber = lastNumber + 1;
+
+  return `${prefix}${String(nextNumber).padStart(3, "0")}`;
 };
+
+
+
 
 export const createStudent = async (req, res) => {
   try {
@@ -22,14 +29,14 @@ export const createStudent = async (req, res) => {
     } = req.body;
 
     // Auto-generate username → Example: GVS + timestamp
-    const username = await generateUsername;
+    const username = await generateStudentUsername();
 
     // Default password
     const defaultPassword = "ChangeMe@123";
     const hashedPassword = await bcrypt.hash(defaultPassword, 10);
 
     const student = new Student({
-      username,
+      username:username,
       password: hashedPassword,
       fullName,
       sex,
@@ -55,28 +62,28 @@ export const createStudent = async (req, res) => {
 // GET STUDENTS (with filters + pagination)
 export const getStudents = async (req, res) => {
   try {
-    const { grade, section, stream, username, page = 1, limit = 10 } = req.query;
+    const filters = {};
 
-    const query = {};
+    if (req.query.username)
+      filters.username = { $regex: req.query.username, $options: "i" };
 
-    if (grade) query.grade = grade;
-    if (section) query.section = section;
-    if (stream) query.stream = stream;
-    if (username) query.username = new RegExp(username, "i");
+    if (req.query.grade) filters.grade = req.query.grade;
 
-    const students = await Student.find(query)
-      .skip((page - 1) * limit)
-      .limit(Number(limit))
-      .select("-password");
+    if (req.query.section)
+      filters.section = { $regex: req.query.section, $options: "i" };
 
-    const total = await Student.countDocuments(query);
+    if (req.query.stream) filters.stream = req.query.stream;
 
-    res.json({ students, total });
+    const students = await Student.find(filters);
 
+    res.json({ students });
+    
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("GET STUDENTS ERROR:", err);
+    res.status(500).json({ message: "Server error fetching students" });
   }
 };
+
 
 
 // GET BY ID

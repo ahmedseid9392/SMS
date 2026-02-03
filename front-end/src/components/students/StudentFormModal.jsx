@@ -54,21 +54,25 @@ export default function StudentFormModal() {
 
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex justify-center items-center">
+    <div className="fixed inset-0 bg-white dark:bg-gray-800 p-6 rounded w-full max-w-lg/40 flex justify-center items-center">
       <div className="bg-white p-6 rounded w-full max-w-lg">
-        <h2 className="font-semibold mb-4">
+        <h2 className="font-semibold mb-4 text-blue-800 dark:text-white">
           {id ? "Edit Student" : "Add Student"}
         </h2>
 
         <input
           placeholder="Full Name"
-          className="border p-2 w-full mb-2"
+          className="border p-2 w-full mb-2 bg-white dark:bg-gray-700 
+             text-gray-900 dark:text-gray-100 
+             border-gray-300 dark:border-gray-600order p-2 w-full mb-2"
           value={form.fullName}
           onChange={e => setForm({ ...form, fullName: e.target.value })}
         />
 
         <select
-          className="border p-2 w-full mb-2"
+          className="borborder p-2 w-full mb-2 bg-white dark:bg-gray-700 
+             text-gray-900 dark:text-gray-100 
+             border-gray-300 dark:border-gray-600der p-2 w-full mb-2"
           value={form.sex}
           onChange={e => setForm({ ...form, sex: e.target.value })}
         >
@@ -79,7 +83,9 @@ export default function StudentFormModal() {
 
         <input
           placeholder="Grade"
-          className="border p-2 w-full mb-2"
+          className="border p-2 w-full mb-2 bg-white dark:bg-gray-700 
+             text-gray-900 dark:text-gray-100 
+             border-gray-300 dark:border-gray-600border p-2 w-full mb-2"
           value={form.grade}
          onChange={e => setForm({ ...form, grade: Number(e.target.value) })}
 
@@ -87,7 +93,9 @@ export default function StudentFormModal() {
 
         {(form.grade == 11 || form.grade == 12) && (
           <select
-            className="border p-2 w-full mb-2"
+            className="borborder p-2 w-full mb-2 bg-white dark:bg-gray-700 
+             text-gray-900 dark:text-gray-100 
+             border-gray-300 dark:border-gray-600der p-2 w-full mb-2"
             value={form.stream}
             onChange={e => setForm({ ...form, stream: e.target.value })}
           >
@@ -99,14 +107,16 @@ export default function StudentFormModal() {
 
         <input
           placeholder="Section"
-          className="border p-2 w-full mb-4"
+          className="borborder p-2 w-full mb-2 bg-white dark:bg-gray-700 
+             text-gray-900 dark:text-gray-100 
+             border-gray-300 dark:border-gray-600der p-2 w-full mb-4"
           value={form.section}
           onChange={e => setForm({ ...form, section: e.target.value })}
         />
 
         <div className="flex justify-end gap-2">
-          <button onClick={() => navigate("/admin/students")}>Cancel</button>
-          <button onClick={submit} className="bg-blue-600 text-white px-4 py-2 rounded">
+          <button onClick={() => navigate("/admin/students")} className="bg-bbg-blue-600 dark:bg-red-700 text-white px-4 py-2 rounded">Cancel</button>
+          <button onClick={submit} className="bg-bbg-blue-600 dark:bg-blue-700 text-white px-4 py-2 rounded">
             Save
           </button>
         </div>

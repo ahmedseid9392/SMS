@@ -16,6 +16,8 @@ export const getStudents = async (token, filters = {}) => {
 };
 
 
+
+
 // UPDATE STUDENT
 export const updateStudent = (id, data, token) => {
   return api.put(`/students/${id}`, data, {

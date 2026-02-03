@@ -2,6 +2,10 @@ import express from "express";
 import cors from "cors";
 import authRoutes from "./routes/auth.routes.js";
 import studentRouter from "./routes/student.routes.js";
+import teacherRoutes from "./routes/teacherRoutes.js";
+
+
+
 
 const app = express();
 
@@ -13,6 +17,7 @@ app.use(express.json());
 
 app.use("/api/auth", authRoutes);
 app.use("/api/students", studentRouter);
+app.use("/api/teachers", teacherRoutes);
 
 // TEST ROUTE (IMPORTANT)
 app.get("/api/test", (req, res) => {
