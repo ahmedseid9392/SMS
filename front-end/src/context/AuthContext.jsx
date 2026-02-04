@@ -1,5 +1,5 @@
 import api from "../api/axios";
-import { createContext, useState, useContext, useEffect } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 
 const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
@@ -7,45 +7,39 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
 
-  // 🔥 RESTORE USER SESSION ON PAGE REFRESH
+  // Restore on refresh
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    const userData = localStorage.getItem("user");
-
-    if (token && userData) {
-      setUser({
-        ...JSON.parse(userData),
-        token: token,
-      });
+    const stored = localStorage.getItem("user");
+    if (stored) {
+      setUser(JSON.parse(stored));
     }
   }, []);
 
-  // 🔥 LOGIN FUNCTION
+  // LOGIN
   const login = async (username, password) => {
     try {
       const res = await api.post("/auth/login", { username, password });
 
-      // Save token + user to localStorage
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("user", JSON.stringify(res.data.user));
-
-      // 🔥 FIX: include token inside user state
-      setUser({
+      const fullUser = {
         ...res.data.user,
-        token: res.data.token,
-      });
+        token: res.data.token,  // IMPORTANT
+      };
 
+      // Save exactly how axios expects
+      localStorage.setItem("user", JSON.stringify(fullUser));
+
+      setUser(fullUser);
       return true;
-    } catch (error) {
+    } catch (err) {
+      console.error("LOGIN FAILED:", err);
       alert("Invalid username or password");
       return false;
     }
   };
 
-  // 🔥 LOGOUT FUNCTION
+  // LOGOUT
   const logout = () => {
     setUser(null);
-    localStorage.removeItem("token");
     localStorage.removeItem("user");
   };
 

@@ -8,7 +8,7 @@ export default function CourseTable({ courses = [], onEdit, onDelete }) {
           <th className="p-3 border">Name</th>
           <th className="p-3 border">Grade</th>
           <th className="p-3 border">Stream</th>
-          <th className="p-3 border">Teacher</th>
+        
           <th className="p-3 border">Actions</th>
         </tr>
       </thead>
@@ -17,11 +17,9 @@ export default function CourseTable({ courses = [], onEdit, onDelete }) {
         {courses.map((course) => (
           <tr key={course._id} className="border dark:border-gray-700">
             <td className="p-3 border">{course.name}</td>
-            <td className="p-3 border">{course.grade}</td>
+            <td className="p-3 border">{course.gradeLevel}</td>
             <td className="p-3 border">{course.stream || "—"}</td>
-            <td className="p-3 border">
-              {course.teacher?.name || "—"}
-            </td>
+         
 
             <td className="p-3 border flex gap-2">
               <button

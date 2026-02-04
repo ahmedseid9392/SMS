@@ -10,7 +10,8 @@ import protect from "../middleware/auth.middleware.js";
 
 const router = express.Router();
 
-router.post("/", protect ,createCourse);
+// All course routes require login
+router.post("/", protect, createCourse);
 router.get("/", protect, getCourses);
 router.get("/:id", protect, getCourseById);
 router.put("/:id", protect, updateCourse);

@@ -13,12 +13,8 @@ const courseSchema = new mongoose.Schema({
     type: String,
     enum: ["Natural", "Social", "None"],
     default: "None",
-  },
-  teacher: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Teacher",
-   
-  },
+  }
+ 
 }, { timestamps: true });
 
 export default mongoose.model("Course", courseSchema);

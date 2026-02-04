@@ -9,16 +9,18 @@ const Courses = () => {
   const [courses, setCourses] = useState([]);
   const navigate = useNavigate();
   const { user } = useAuth();
-   console.log("TOKEN:", localStorage.getItem("token"));
-
-  const loadCourses = async () => {
+  
+const loadCourses = async () => {
   try {
-    const res = await getCourses();
-    setCourses(res.courses || []);
-  } catch (e) {
-    console.error(e);
+    const data = await getCourses();   // data IS array
+    setCourses(Array.isArray(data) ? data : []);
+  } catch (err) {
+    console.error("Failed to load courses", err);
+    setCourses([]);
   }
 };
+
+
 
 
 

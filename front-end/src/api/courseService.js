@@ -1,8 +1,8 @@
 import api from "./axios";
 
-// GET all courses
 export const getCourses = async () => {
-  return api.get("/courses");
+  const res = await api.get("/courses");
+  return res.data;   // RETURN ARRAY DIRECTLY
 };
 
 // GET single course by ID

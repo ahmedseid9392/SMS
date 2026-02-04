@@ -3,61 +3,71 @@ import { useNavigate, useParams } from "react-router-dom";
 import {
   createCourse,
   updateCourse,
-  getCourseById
+  getCourseById,
 } from "../../api/courseService";
-import { getTeachers } from "../../api/teacherService";
 
 const CourseForm = () => {
-  const { id } = useParams(); // if exists → EDIT MODE
+  const { id } = useParams();
   const navigate = useNavigate();
-
-  //const [teachers, setTeachers] = useState([]);
 
   const [form, setForm] = useState({
     name: "",
-    grade: "",
-    stream: ""
-   
+     gradeLevel: "",
+    stream: "",
   });
 
   const isEdit = Boolean(id);
 
-  // LOAD TEACHERS
-  // useEffect(() => {
-  //   const loadTeachers = async () => {
-  //     const data = await getTeachers();
-  //     setTeachers(data.teachers);
-  //   };
-  //   loadTeachers();
-  // }, []);
+  // LOAD COURSE IF EDIT MODE
+ useEffect(() => {
+  if (isEdit) {
+    (async () => {
+      try {
+        const res = await getCourseById(id);
 
-  // LOAD COURSE IF EDITING
-  useEffect(() => {
-    if (isEdit) {
-      (async () => {
-        const data = await getCourseById(id);
+        // API returns: { course: {...} }
+        const course =
+          res.course ||           // direct
+          res.data?.course ||     // axios wrapped
+          res.data ||             // fallback
+          null;
+
+        if (!course) {
+          console.error("Invalid API response:", res);
+          return;
+        }
+
         setForm({
-          name: data.name,
-          grade: data.grade,
-          stream: data.stream || ""
-          //teacher: data.teacher?._id || ""
+          name: course.name || "",
+          gradeLevel: course.gradeLevel?.toString() || "",
+          stream: course.stream || "",
         });
-      })();
-    }
-  }, [id]);
+      } catch (err) {
+        console.error("Failed to load course", err);
+      }
+    })();
+  }
+}, [id]);
 
-  // UPDATE FORM
+
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
-  // SUBMIT
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (isEdit) await updateCourse(id, form);
-    else await createCourse(form);
+    try {
+      if (isEdit) {
+        await updateCourse(id, form);
+      } else {
+        await createCourse(form);
+      }
 
-    navigate("/admin/courses");
+      navigate("/admin/courses");
+    } catch (err) {
+      console.error("Save failed:", err);
+      alert("Failed to save course");
+    }
   };
 
   return (
@@ -67,7 +77,6 @@ const CourseForm = () => {
       </h1>
 
       <form onSubmit={handleSubmit} className="grid gap-4">
-
         <div>
           <label className="font-semibold">Course Name</label>
           <input
@@ -82,8 +91,8 @@ const CourseForm = () => {
         <div>
           <label className="font-semibold">Grade</label>
           <select
-            name="grade"
-            value={form.grade}
+              name="gradeLevel"
+            value={form.gradeLevel}
             onChange={handleChange}
             className="w-full border p-2 rounded"
             required
@@ -96,7 +105,7 @@ const CourseForm = () => {
           </select>
         </div>
 
-        {(form.grade === "11" || form.grade === "12") && (
+        {(form.gradeLevel === "11" || form.gradeLevel === "12") && (
           <div>
             <label className="font-semibold">Stream</label>
             <select
@@ -112,23 +121,6 @@ const CourseForm = () => {
             </select>
           </div>
         )}
-
-        {/* <div>
-          <label className="font-semibold">Teacher</label>
-          <select
-            name="teacher"
-            value={form.teacher}
-            onChange={handleChange}
-            className="w-full border p-2 rounded"
-          >
-            <option value="">No Teacher</option>
-            {teachers.map((t) => (
-              <option key={t._id} value={t._id}>
-                {t.name}
-              </option>
-            ))}
-          </select>
-        </div> */}
 
         <div className="flex gap-3 mt-4">
           <button
