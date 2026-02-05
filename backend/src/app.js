@@ -4,6 +4,7 @@ import authRoutes from "./routes/auth.routes.js";
 import studentRouter from "./routes/student.routes.js";
 import teacherRoutes from "./routes/teacherRoutes.js";
 import courseRoutes from "./routes/courseRoutes.js";
+import teacherAssignmentRoutes from "./routes/TeacherAssigment.route.js";
 
 
 
@@ -22,6 +23,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/students", studentRouter);
 app.use("/api/teachers", teacherRoutes);
 app.use("/api/courses", courseRoutes);
+app.use("/api/assignments", teacherAssignmentRoutes);
+
 
 // TEST ROUTE (IMPORTANT)
 app.get("/api/test", (req, res) => {

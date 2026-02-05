@@ -26,6 +26,7 @@ export const createStudent = async (req, res) => {
       grade,
       section,
       stream,
+      courses,
     } = req.body;
 
     // Auto-generate username → Example: GVS + timestamp
@@ -43,6 +44,7 @@ export const createStudent = async (req, res) => {
       grade,
       section,
       stream: grade >= 11 ? stream : undefined,
+      courses,
       mustChangePassword: true,
     });
 

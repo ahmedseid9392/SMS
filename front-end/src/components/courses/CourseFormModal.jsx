@@ -12,43 +12,38 @@ const CourseForm = () => {
 
   const [form, setForm] = useState({
     name: "",
-     gradeLevel: "",
+    gradeLevel: "",
     stream: "",
   });
 
   const isEdit = Boolean(id);
 
   // LOAD COURSE IF EDIT MODE
- useEffect(() => {
-  if (isEdit) {
-    (async () => {
-      try {
-        const res = await getCourseById(id);
+  useEffect(() => {
+    if (isEdit) {
+      (async () => {
+        try {
+          const res = await getCourseById(id);
 
-        // API returns: { course: {...} }
-        const course =
-          res.course ||           // direct
-          res.data?.course ||     // axios wrapped
-          res.data ||             // fallback
-          null;
+          const course =
+            res.course ||
+            res.data?.course ||
+            res.data ||
+            null;
 
-        if (!course) {
-          console.error("Invalid API response:", res);
-          return;
+          if (!course) return;
+
+          setForm({
+            name: course.name || "",
+            gradeLevel: course.gradeLevel?.toString() || "",
+            stream: course.stream || "",
+          });
+        } catch (err) {
+          console.error("Failed to load course", err);
         }
-
-        setForm({
-          name: course.name || "",
-          gradeLevel: course.gradeLevel?.toString() || "",
-          stream: course.stream || "",
-        });
-      } catch (err) {
-        console.error("Failed to load course", err);
-      }
-    })();
-  }
-}, [id]);
-
+      })();
+    }
+  }, [id]);
 
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -57,11 +52,8 @@ const CourseForm = () => {
     e.preventDefault();
 
     try {
-      if (isEdit) {
-        await updateCourse(id, form);
-      } else {
-        await createCourse(form);
-      }
+      if (isEdit) await updateCourse(id, form);
+      else await createCourse(form);
 
       navigate("/admin/courses");
     } catch (err) {
@@ -71,30 +63,43 @@ const CourseForm = () => {
   };
 
   return (
-    <div className="p-6 max-w-xl mx-auto">
+    <div className="p-6 max-w-xl mx-auto 
+        bg-white dark:bg-gray-900 
+        text-gray-900 dark:text-gray-100 
+        rounded-lg shadow-md">
+
       <h1 className="text-3xl font-bold mb-4">
         {isEdit ? "Edit Course" : "New Course"}
       </h1>
 
       <form onSubmit={handleSubmit} className="grid gap-4">
+
+        {/* Course Name */}
         <div>
           <label className="font-semibold">Course Name</label>
           <input
             name="name"
             value={form.name}
             onChange={handleChange}
-            className="w-full border p-2 rounded"
+            className="w-full border p-2 rounded
+              bg-gray-100 dark:bg-gray-800
+              text-gray-900 dark:text-gray-100
+              border-gray-300 dark:border-gray-700"
             required
           />
         </div>
 
+        {/* Grade */}
         <div>
           <label className="font-semibold">Grade</label>
           <select
-              name="gradeLevel"
+            name="gradeLevel"
             value={form.gradeLevel}
             onChange={handleChange}
-            className="w-full border p-2 rounded"
+            className="w-full border p-2 rounded
+              bg-gray-100 dark:bg-gray-800
+              text-gray-900 dark:text-gray-100
+              border-gray-300 dark:border-gray-700"
             required
           >
             <option value="">Select grade</option>
@@ -105,6 +110,7 @@ const CourseForm = () => {
           </select>
         </div>
 
+        {/* Stream */}
         {(form.gradeLevel === "11" || form.gradeLevel === "12") && (
           <div>
             <label className="font-semibold">Stream</label>
@@ -112,7 +118,10 @@ const CourseForm = () => {
               name="stream"
               value={form.stream}
               onChange={handleChange}
-              className="w-full border p-2 rounded"
+              className="w-full border p-2 rounded
+                bg-gray-100 dark:bg-gray-800
+                text-gray-900 dark:text-gray-100
+                border-gray-300 dark:border-gray-700"
               required
             >
               <option value="">Select stream</option>
@@ -122,10 +131,12 @@ const CourseForm = () => {
           </div>
         )}
 
+        {/* Buttons */}
         <div className="flex gap-3 mt-4">
           <button
             type="submit"
-            className="bg-blue-600 text-white px-5 py-2 rounded-lg"
+            className="bg-blue-600 hover:bg-blue-700 
+              text-white px-5 py-2 rounded-lg"
           >
             Save
           </button>
@@ -133,7 +144,8 @@ const CourseForm = () => {
           <button
             type="button"
             onClick={() => navigate("/admin/courses")}
-            className="bg-gray-400 text-white px-5 py-2 rounded-lg"
+            className="bg-gray-500 hover:bg-gray-600 
+              text-white px-5 py-2 rounded-lg"
           >
             Cancel
           </button>

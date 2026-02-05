@@ -12,6 +12,8 @@ import Courses from "../pages/admin/Courses";
 import StudentFormModal from "../components/students/StudentFormModal"
 import TeacherForm from "../components/teachers/TeacherForm"
 import CourseFormModal from "../components/courses/CourseFormModal"
+import AssignmentForm from "../components/Assignment/AssignmentForm"
+import  TeacherAssignment from "../pages/admin/TeacherAssignment"
 
 import TeacherDashboard from "../pages/teacher/Dashboard";
 import Attendance from "../pages/teacher/Attendance";
@@ -66,6 +68,14 @@ const AppRoutes = () => (
     </ProtectedRoute>
   }
 />
+     <Route
+  path="/admin/assignment"
+  element={
+    <ProtectedRoute>
+     < TeacherAssignment/>
+    </ProtectedRoute>
+  }
+/>
 
 <Route
   path="/admin/students/add"
@@ -115,6 +125,24 @@ const AppRoutes = () => (
   element={
     <ProtectedRoute>
      <CourseFormModal/>
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/admin/assignment/add"
+  element={
+    <ProtectedRoute>
+      <AssignmentForm/>
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/admin/assignment/edit/:id"
+  element={
+    <ProtectedRoute>
+     <AssignmentForm/>
     </ProtectedRoute>
   }
 />
