@@ -1,21 +1,26 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate,useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 import { getTeachers } from "../../api/teacherService";
 import { getCourses } from "../../api/courseService";
-import { createAssignment ,getAssignmentById,updateAssignment} from "../../api/TeacherAssignmentService";
+import {
+  createAssignment,
+  updateAssignment,
+  getAssignmentById,
+} from "../../api/TeacherAssignmentService";
+
 import { useAuth } from "../../context/AuthContext";
 
 const AssignmentForm = () => {
   const navigate = useNavigate();
+  const { id } = useParams();
   const { user } = useAuth();
   const token = user?.token;
 
+  const isEdit = Boolean(id);
+
   const [teachers, setTeachers] = useState([]);
   const [courses, setCourses] = useState([]);
-  const [filteredCourses, setFilteredCourses] = useState([]);
-   const { id } = useParams();
-
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
 
@@ -27,84 +32,91 @@ const AssignmentForm = () => {
     teacher: "",
   });
 
+  // ----------------------------
+  // HANDLE INPUT CHANGES
+  // ----------------------------
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm({ ...form, [name]: value });
 
-    // When grade or stream changes → re-filter courses
-    if (name === "grade" || name === "stream") {
-      filterCourses(
-        name === "grade" ? value : form.grade,
-        name === "stream" ? value : form.stream
-      );
-    }
+    setForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
-  /** Load teachers + courses from API */
+  // ----------------------------
+  // LOAD TEACHERS + COURSES
+  // ----------------------------
   const loadData = async () => {
-  try {
-    const t = await getTeachers(token);
-    const c = await getCourses(token);
+    try {
+      const t = await getTeachers(token);
+      const c = await getCourses(token);
 
-   
-    // Teachers come inside t.data.teachers
-    const teacherList = Array.isArray(t?.data?.teachers)
-      ? t.data.teachers
-      : [];
+      const teacherList =
+        t?.teachers ||
+        t?.data?.teachers ||
+        t?.data ||
+        (Array.isArray(t) ? t : []);
 
-    // Courses come directly as array
-    const courseList = Array.isArray(c?.data)
-      ? c.data
-      : Array.isArray(c)
-      ? c
-      : [];
+      const courseList =
+        c?.courses ||
+        c?.data ||
+        (Array.isArray(c) ? c : []);
 
-    setTeachers(teacherList);
-    setCourses(courseList);
-  } catch (err) {
-    console.error("Error loading:", err);
-    setMsg("Failed to load teachers or courses.");
-  }
-};
-
-const isEdit = Boolean(id);
-
-useEffect(() => {
-  if (!isEdit) return; // create mode
-
-  const load = async () => {
-    const res = await getAssignmentById(id);
-
-    setForm({
-      grade: res.assignment.grade,
-      section: res.assignment.section,
-      stream: res.assignment.stream,
-      course: res.assignment.course._id,
-      teacher: res.assignment.teacher._id,
-    });
-  };
-
-  load();
-}, [id]);
-
-
-  /** Filter courses based on grade + stream */
-  const filterCourses = (grade, stream) => {
-    if (!grade || !stream) {
-      setFilteredCourses([]);
-      return;
+      setTeachers(teacherList);
+      setCourses(courseList);
+    } catch (err) {
+      console.error("LOAD ERROR:", err);
+      setMsg("Failed to load teachers or courses");
     }
-
-    const result = courses.filter(
-      (c) =>
-        Number(c.grade) === Number(grade) &&
-        c.stream?.toLowerCase() === stream.toLowerCase()
-    );
-
-    setFilteredCourses(result);
   };
 
-  /** Validation */
+  // ----------------------------
+  // LOAD EDIT DATA
+  // ----------------------------
+  const loadAssignment = async () => {
+    try {
+      const res = await getAssignmentById(id);
+
+      const a =
+        res?.assignment ||
+        res?.data?.assignment ||
+        res?.data ||
+        res;
+
+      if (!a) {
+        console.error("Invalid assignment response:", res);
+        return;
+      }
+
+      setForm({
+        grade: a.grade || "",
+        section: a.section || "",
+        stream: a.stream || "",
+        course: a.course?._id || "",
+        teacher: a.teacher?._id || "",
+      });
+    } catch (err) {
+      console.error("LOAD EDIT ERROR:", err);
+    }
+  };
+
+  // ----------------------------
+  // INITIAL LOAD
+  // ----------------------------
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  useEffect(() => {
+    if (isEdit && teachers.length > 0 && courses.length > 0) {
+      loadAssignment();
+    }
+  }, [isEdit, teachers, courses]);
+
+  // ----------------------------
+  // VALIDATION
+  // ----------------------------
   const validate = () => {
     if (!form.grade || !form.section || !form.course || !form.teacher) {
       setMsg("All required fields must be filled.");
@@ -113,18 +125,26 @@ useEffect(() => {
     return true;
   };
 
-  /** Submit */
+  // ----------------------------
+  // SUBMIT
+  // ----------------------------
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
 
     try {
       setLoading(true);
-      await createAssignment(form, token);
+
+      if (isEdit) {
+        await updateAssignment(id, form, token);
+      } else {
+        await createAssignment(form, token);
+      }
+
       navigate("/admin/assignment");
     } catch (err) {
-      console.log(err);
-      setMsg("Failed to create assignment.");
+      console.error("SUBMIT ERROR:", err);
+      setMsg("Failed to save assignment");
     } finally {
       setLoading(false);
     }
@@ -133,15 +153,13 @@ useEffect(() => {
   return (
     <div className="p-6 border rounded-xl shadow-md bg-white dark:bg-gray-900">
       <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
-        Assign Teacher to Course
+        {isEdit ? "Edit Assignment" : "Assign Teacher to Course"}
       </h2>
 
       {msg && <p className="mb-3 text-red-500 font-medium">{msg}</p>}
 
-      <form
-        onSubmit={handleSubmit}
-        className="grid grid-cols-1 md:grid-cols-2 gap-4"
-      >
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
         {/* Grade */}
         <div>
           <label className="text-gray-700 dark:text-gray-300">Grade</label>
@@ -152,7 +170,7 @@ useEffect(() => {
             max="12"
             value={form.grade}
             onChange={handleChange}
-            className="mt-1 w-full px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
+            className="mt-1 w-full px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-800"
           />
         </div>
 
@@ -163,7 +181,7 @@ useEffect(() => {
             name="section"
             value={form.section}
             onChange={handleChange}
-            className="mt-1 w-full px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
+            className="mt-1 w-full px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-800"
           />
         </div>
 
@@ -174,7 +192,7 @@ useEffect(() => {
             name="stream"
             value={form.stream}
             onChange={handleChange}
-            className="mt-1 w-full px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
+            className="mt-1 w-full px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-800"
           >
             <option value="">Select Stream</option>
             <option value="Natural">Natural</option>
@@ -185,26 +203,28 @@ useEffect(() => {
         {/* Course */}
         <div>
           <label className="text-gray-700 dark:text-gray-300">Course</label>
-         <select
-  name="course"
-  value={form.course}
-  onChange={handleChange}
-  className="mt-1 w-full px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
->
-  <option value="">Select Course</option>
+          <select
+            name="course"
+            value={form.course}
+            onChange={handleChange}
+            className="mt-1 w-full px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-800"
+          >
+            <option value="">Select Course</option>
 
-  {courses
-    .filter(c =>
-      (!form.grade || c.gradeLevel == form.grade) &&
-      (!form.stream || c.stream === form.stream || c.stream === "None")
-    )
-    .map((c) => (
-      <option key={c._id} value={c._id}>
-        {c.name} (Grade {c.gradeLevel}, {c.stream})
-      </option>
-    ))}
-</select>
+            {courses
+              .filter((c) => {
+                if (!form.grade) return true;
+                if (c.gradeLevel != form.grade) return false;
 
+                if (!form.stream) return true;
+                return c.stream === form.stream || c.stream === "None";
+              })
+              .map((c) => (
+                <option key={c._id} value={c._id}>
+                  {c.name} (Grade {c.gradeLevel}, {c.stream})
+                </option>
+              ))}
+          </select>
         </div>
 
         {/* Teacher */}
@@ -214,13 +234,13 @@ useEffect(() => {
             name="teacher"
             value={form.teacher}
             onChange={handleChange}
-            className="mt-1 w-full px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
+            className="mt-1 w-full px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-800"
           >
             <option value="">Select Teacher</option>
 
             {teachers.map((t) => (
               <option key={t._id} value={t._id}>
-                {t.fullName  } : {t.subject}
+                {t.fullName} : {t.subject}
               </option>
             ))}
           </select>
@@ -241,7 +261,7 @@ useEffect(() => {
             disabled={loading}
             className="px-5 py-2 rounded-lg bg-blue-600 text-white"
           >
-            {loading ? "Saving..." : "Create Assignment"}
+            {loading ? "Saving..." : isEdit ? "Update Assignment" : "Create Assignment"}
           </button>
         </div>
       </form>

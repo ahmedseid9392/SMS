@@ -93,9 +93,9 @@ export const getAssignmentById = async (req, res) => {
 
 export const updateAssignment = async (req, res) => {
   try {
-    const { teacherId, courseId, grade, section, stream } = req.body;
+    const { teacher, course, grade, section, stream } = req.body;
 
-    if (!teacherId || !courseId) {
+    if (!teacher || !course) {
       return res
         .status(400)
         .json({ message: "Teacher and Course are required" });
@@ -110,8 +110,8 @@ export const updateAssignment = async (req, res) => {
     const updatedAssignment = await TeacherAssignment.findByIdAndUpdate(
       req.params.id,
       {
-        teacherId,
-        courseId,
+        teacher,
+        course,
         grade,
         section,
         stream: stream || "None",

@@ -116,7 +116,7 @@ const Login = () => {
 
         {/* Sample Demo Accounts */}
         <p className="text-sm mt-5 text-center opacity-70">
-          GVA2018011 | GVT2018011 | GVS2018011 | GVP2018011  
+          GVA2018011 | GVS2024001 | GVS2018011 | GVP2018011  
           <br /> Default Password: <strong>ChangeMe@123</strong>
         </p>
       </form>
