@@ -1,12 +1,17 @@
 import express from "express";
-import { registerTeacher,
-    getTeachers,
+import {
+  getTeachers,
   getTeacherById,
   updateTeacher,
-  deleteTeacher } from "../controllers/Teacher.controller.js";
+  deleteTeacher,
+  registerTeacher,
+  getAssignedClassesAndStudents
+} from "../controllers/Teacher.controller.js";
 import protect from "../middleware/auth.middleware.js";
 
 const router = express.Router();
+
+router.get("/assigned-classes", protect, getAssignedClassesAndStudents);
 
 // Admin only — protect middleware required
 router.post("/register", protect, registerTeacher);

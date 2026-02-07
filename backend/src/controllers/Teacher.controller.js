@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import Teacher from "../models/Teacher.model.js";
-
+import TeacherAssignment from "../models/TeacherAssigment.model.js"
+import Student from "../models/Student.model.js"
 const generateTeacherUsername = async () => {
   const count = await Teacher.countDocuments();
   return `GVS2024${String(count + 1).padStart(3, "0")}`;
@@ -121,3 +122,42 @@ export const deleteTeacher = async (req, res) => {
     res.status(500).json({ message: "Failed to delete teacher" });
   }
 };
+
+
+export const getAssignedClassesAndStudents = async (req, res) => {
+  try {
+    const teacherId = req.user.id;
+
+    const assignments = await TeacherAssignment.find({ teacher: teacherId })
+      .populate("course", "name gradeLevel stream")
+      .lean();
+
+    const results = [];
+
+    for (const a of assignments) {
+
+      const students = await Student.find({
+        grade: Number(a.grade), // or a.course.gradeLevel
+        stream: { $regex: `^${a.stream}$`, $options: "i" },
+        section: { $regex: `^${a.section}$`, $options: "i" }
+      });
+
+      results.push({
+        classInfo: {
+          grade: a.grade,
+          section: a.section,
+          stream: a.stream,
+          course: a.course?.name,
+        },
+        students,
+      });
+    }
+
+    res.status(200).json(results);
+
+  } catch (err) {
+    console.error("Assigned Class Fetch Error:", err);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+

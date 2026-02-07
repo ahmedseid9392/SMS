@@ -17,7 +17,8 @@ import  TeacherAssignment from "../pages/admin/TeacherAssignment"
 
 import TeacherDashboard from "../pages/teacher/Dashboard";
 import Attendance from "../pages/teacher/Attendance";
-import Grades from "../pages/teacher/Grades";
+import GradeSubmission from "../pages/teacher/GradeSubmission";
+import Classes from "../pages/teacher/Classes";
 
 import StudentDashboard from "../pages/student/Dashboard";
 import Results from "../pages/student/Results";
@@ -170,7 +171,15 @@ const AppRoutes = () => (
         path="/teacher/grades"
         element={
           <ProtectedRoute>
-            <Grades />
+            <GradeSubmission/>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/teacher/classes"
+        element={
+          <ProtectedRoute>
+            < Classes />
           </ProtectedRoute>
         }
       />
