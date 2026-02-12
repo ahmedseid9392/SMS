@@ -1,45 +1,164 @@
-import { useState } from "react";
-import { submitGrade } from "../../api/gradeService";
+import { useState, useEffect } from "react";
+import { submitFinalGrade, saveGradeDraft } from "../../api/gradeService";
+import { toast } from "react-hot-toast";
 
 export default function GradeEntryTable({ selectedClass, weights }) {
   const [grades, setGrades] = useState({});
   const [submitted, setSubmitted] = useState({});
   const students = selectedClass.students;
 
+  // -------------------------
+  // HANDLE INPUT CHANGE
+  // -------------------------
   const handleChange = (studentId, field, value) => {
     setGrades((prev) => ({
       ...prev,
       [studentId]: {
         ...prev[studentId],
-        [field]: Number(value),
+        [field]: value === "" ? "" : Number(value),
       },
     }));
   };
 
-  const calculateTotal = (g) => {
-    if (!g) return 0;
-    return (
-      (g.mid || 0) * weights.midWeight +
-      (g.quiz || 0) * weights.quizWeight +
-      (g.assignment || 0) * weights.assignmentWeight +
-      (g.final || 0) * weights.finalWeight
-    ).toFixed(2);
+  // -------------------------
+  // TOTAL CALCULATION (RAW)
+  // -------------------------
+  const calculateTotal = (scores) => {
+  if (!scores) return 0;
+
+  const MAX = {
+    mid: weights.midWeight,
+    quiz: weights.quizWeight,
+    assignment: weights.assignmentWeight,
+    final: weights.finalWeight,
   };
 
-  const handleSubmit = async (student) => {
-    const g = grades[student._id];
-    if (!g) return alert("Fill all fields");
+  // validation
+  if (
+    scores.mid > MAX.mid ||
+    scores.quiz > MAX.quiz ||
+    scores.assignment > MAX.assignment ||
+    scores.final > MAX.final
+  ) {
+    return "Invalid";
+  }
 
-    const payload = {
-      studentId: student._id,
-      classInfo: selectedClass.classInfo,
-      scores: g,
-    };
+  const total =
+    (scores.mid || 0) +
+    (scores.quiz || 0) +
+    (scores.assignment || 0) +
+    (scores.final || 0);
 
-    const res = await submitGrade(payload);
+  return Number(total.toFixed(2));
+};
 
-    if (res.data.success || res.data.message === "Grade submitted") {
+
+  // -------------------------
+  // LOAD SAVED OR SUBMITTED
+  // -------------------------
+  useEffect(() => {
+    if (!selectedClass) return;
+
+    const loaded = {};
+    const submittedStatus = {};
+
+    selectedClass.students.forEach((st) => {
+      if (st.scores) {
+        loaded[st._id] = {
+          mid: st.scores.mid ?? "",
+          quiz: st.scores.quiz ?? "",
+          assignment: st.scores.assignment ?? "",
+          final: st.scores.final ?? "",
+        };
+
+        // IF NOT DRAFT → SUBMITTED
+        if (st.scores.isDraft === false) {
+          submittedStatus[st._id] = true;
+        }
+      }
+    });
+
+    setGrades(loaded);
+    setSubmitted(submittedStatus);
+  }, [selectedClass]);
+
+  // -------------------------
+  // SUBMIT FINAL
+  // -------------------------
+  const handleSubmitFinal = async (student) => {
+    const scores = grades[student._id];
+
+    if (submitted[student._id]) {
+      return toast.error("Already submitted");
+    }
+
+    // Required fields check
+    if (
+      scores.mid === "" ||
+      scores.quiz === "" ||
+      scores.assignment === "" ||
+      scores.final === ""
+    ) {
+      return toast.error("All fields are required before submitting");
+    }
+
+    // Max score validation
+    if (calculateTotal(scores) === "Invalid") {
+      return toast.error("Score exceeds maximum allowed");
+    }
+
+    try {
+      const payload = {
+        studentId: student._id,
+        courseId: selectedClass.classInfo.courseId,
+        semester: 1,
+        mid: Number(scores.mid),
+        quiz: Number(scores.quiz),
+        assignment: Number(scores.assignment),
+        final: Number(scores.final),
+        isDraft: false,
+      };
+
+      await submitFinalGrade(payload);
+
       setSubmitted((prev) => ({ ...prev, [student._id]: true }));
+
+      toast.success("Final grade submitted");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Submit failed");
+    }
+  };
+
+  // -------------------------
+  // SAVE DRAFT (UPSERT)
+  // -------------------------
+  const handleSaveDraft = async (student) => {
+    const scores = grades[student._id];
+
+    // Save empty allowed? YES (as draft)
+    if (calculateTotal(scores) === "Invalid") {
+      return toast.error("Score exceeds maximum allowed");
+    }
+
+    try {
+      const payload = {
+        studentId: student._id,
+        courseId: selectedClass.classInfo.courseId,
+        semester: 1,
+        mid: scores.mid ?? null,
+        quiz: scores.quiz ?? null,
+        assignment: scores.assignment ?? null,
+        final: scores.final ?? null,
+        status: null, // REQUIRED BY YOU
+        locked: false, // REQUIRED BY YOU
+        isDraft: true,
+      };
+
+      await saveGradeDraft(payload);
+
+      toast.success("Draft saved");
+    } catch (err) {
+      toast.error("Draft save failed");
     }
   };
 
@@ -53,10 +172,10 @@ export default function GradeEntryTable({ selectedClass, weights }) {
             <tr>
               <th className="p-2">Username</th>
               <th className="p-2">Full Name</th>
-              <th className="p-2">Mid (15%)</th>
-              <th className="p-2">Quiz (10%)</th>
-              <th className="p-2">Assignment (25%)</th>
-              <th className="p-2">Final (50%)</th>
+              <th className="p-2">{weights.midWeight}</th>
+              <th className="p-2">{weights.quizWeight}</th>
+              <th className="p-2">{weights.assignmentWeight}</th>
+              <th className="p-2">{weights.finalWeight}</th>
               <th className="p-2">Total</th>
               <th className="p-2">Action</th>
             </tr>
@@ -64,7 +183,7 @@ export default function GradeEntryTable({ selectedClass, weights }) {
 
           <tbody>
             {students.map((student) => {
-              const g = grades[student._id];
+              const g = grades[student._id] || {};
               const total = calculateTotal(g);
 
               return (
@@ -76,9 +195,13 @@ export default function GradeEntryTable({ selectedClass, weights }) {
                   <td className="p-2">
                     <input
                       type="number"
+                      step="0.01"
+                      value={g.mid}
                       disabled={submitted[student._id]}
                       className="w-full rounded bg-gray-100 dark:bg-gray-800 p-1"
-                      onChange={(e) => handleChange(student._id, "mid", e.target.value)}
+                      onChange={(e) =>
+                        handleChange(student._id, "mid", e.target.value)
+                      }
                     />
                   </td>
 
@@ -86,9 +209,13 @@ export default function GradeEntryTable({ selectedClass, weights }) {
                   <td className="p-2">
                     <input
                       type="number"
+                      step="0.01"
+                      value={g.quiz}
                       disabled={submitted[student._id]}
                       className="w-full rounded bg-gray-100 dark:bg-gray-800 p-1"
-                      onChange={(e) => handleChange(student._id, "quiz", e.target.value)}
+                      onChange={(e) =>
+                        handleChange(student._id, "quiz", e.target.value)
+                      }
                     />
                   </td>
 
@@ -96,6 +223,8 @@ export default function GradeEntryTable({ selectedClass, weights }) {
                   <td className="p-2">
                     <input
                       type="number"
+                      step="0.01"
+                      value={g.assignment}
                       disabled={submitted[student._id]}
                       className="w-full rounded bg-gray-100 dark:bg-gray-800 p-1"
                       onChange={(e) =>
@@ -108,26 +237,41 @@ export default function GradeEntryTable({ selectedClass, weights }) {
                   <td className="p-2">
                     <input
                       type="number"
+                      step="0.01"
+                      value={g.final}
                       disabled={submitted[student._id]}
                       className="w-full rounded bg-gray-100 dark:bg-gray-800 p-1"
-                      onChange={(e) => handleChange(student._id, "final", e.target.value)}
+                      onChange={(e) =>
+                        handleChange(student._id, "final", e.target.value)
+                      }
                     />
                   </td>
 
                   {/* TOTAL */}
                   <td className="p-2 font-bold">{total}</td>
 
-                  {/* ACTION */}
-                  <td className="p-2">
+                  {/* ACTION BUTTONS */}
+                  <td className="p-2 flex flex-col gap-2">
                     {!submitted[student._id] ? (
-                      <button
-                        onClick={() => handleSubmit(student)}
-                        className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
-                      >
-                        Submit
-                      </button>
+                      <>
+                        <button
+                          onClick={() => handleSaveDraft(student)}
+                          className="px-4 py-2 rounded-md bg-gray-200 dark:bg-gray-700"
+                        >
+                          Save
+                        </button>
+
+                        <button
+                          onClick={() => handleSubmitFinal(student)}
+                          className="px-4 py-2 rounded-md bg-blue-600 text-white"
+                        >
+                          Submit
+                        </button>
+                      </>
                     ) : (
-                      <span className="text-green-500 font-bold">Submitted</span>
+                      <span className="text-green-500 font-bold">
+                        Submitted
+                      </span>
                     )}
                   </td>
                 </tr>

@@ -126,20 +126,19 @@ export const deleteTeacher = async (req, res) => {
 
 export const getAssignedClassesAndStudents = async (req, res) => {
   try {
-    const teacherId = req.user.id;
+    const teacherId = req.user.id; // FIXED
 
     const assignments = await TeacherAssignment.find({ teacher: teacherId })
-      .populate("course", "name gradeLevel stream")
+      .populate("course", "name gradeLevel stream") // course._id is also available
       .lean();
 
     const results = [];
 
     for (const a of assignments) {
-
       const students = await Student.find({
-        grade: Number(a.grade), // or a.course.gradeLevel
+        grade: Number(a.grade),
         stream: { $regex: `^${a.stream}$`, $options: "i" },
-        section: { $regex: `^${a.section}$`, $options: "i" }
+        section: { $regex: `^${a.section}$`, $options: "i" },
       });
 
       results.push({
@@ -148,6 +147,7 @@ export const getAssignedClassesAndStudents = async (req, res) => {
           section: a.section,
           stream: a.stream,
           course: a.course?.name,
+          courseId: a.course?._id, // FIXED
         },
         students,
       });
@@ -160,4 +160,3 @@ export const getAssignedClassesAndStudents = async (req, res) => {
     res.status(500).json({ message: "Server Error" });
   }
 };
-

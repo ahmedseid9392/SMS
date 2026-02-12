@@ -1,24 +1,23 @@
 import mongoose from "mongoose";
 
-const gradeSchema = new mongoose.Schema({
+const GradeSchema = new mongoose.Schema({
   student: { type: mongoose.Schema.Types.ObjectId, ref: "Student", required: true },
   teacher: { type: mongoose.Schema.Types.ObjectId, ref: "Teacher", required: true },
   course: { type: mongoose.Schema.Types.ObjectId, ref: "Course", required: true },
 
-  semester: { type: Number, enum: [1, 2], required: true },
+  semester: { type: Number, required: true },
 
   scores: {
-    mid: Number,
-    quiz: Number,
-    assignment: Number,
-    final: Number,
+    mid: { type: Number, default: null },
+    quiz: { type: Number, default: null },
+    assignment: { type: Number, default: null },
+    final: { type: Number, default: null },
+    total: { type: Number, default: null },
   },
 
-  total: Number,   // Auto calculated for that semester (100%)
-  yearTotal: Number,  // When both semesters exist
-  status: { type: String, enum: ["PASS", "FAIL"] },
+  status: { type: String, default: null }, // null until submit
+  locked: { type: Boolean, default: false }, // false for drafts
 
-  locked: { type: Boolean, default: true } // Teacher cannot edit after submit
 }, { timestamps: true });
 
-export default mongoose.model("Grade", gradeSchema);
+export default mongoose.model("Grade", GradeSchema);

@@ -11,6 +11,7 @@ import {
 const router = express.Router();
 
 router.post("/submit", protect, submitGrade);
+router.post("/save", protect, submitGrade);
 router.get("/teacher", protect, getTeacherGrades);
 router.get("/all", protect, getAllGrades);
 router.get("/parent", protect, getParentGrades);

@@ -1,85 +1,97 @@
 import Grade from "../models/Grade.model.js";
 import GradingSetting from "../models/GradingSetting.model.js";
+import Student from "../models/Student.model.js";
 
 export const submitGrade = async (req, res) => {
   try {
-    const teacherId = req.user.id;
-    const { studentId, courseId, semester, mid, quiz, assignment, final } = req.body;
-
-    // Check existing grade submission
-    const existing = await Grade.findOne({
-      student: studentId,
-      teacher: teacherId,
-      course: courseId,
-      semester
-    });
-
-    if (existing) {
-      return res.status(400).json({ message: "Grade already submitted, cannot update" });
-    }
-
-    // Get grading settings
-    let setting = await GradingSetting.findOne();
-    if (!setting) {
-      setting = await GradingSetting.create({});
-    }
-
-    // Calculate semester score
-    const total =
-      (mid * setting.midWeight) +
-      (quiz * setting.quizWeight) +
-      (assignment * setting.assignmentWeight) +
-      (final * setting.finalWeight);
-
-    // Save grade entry
-    const grade = await Grade.create({
-      student: studentId,
-      teacher: teacherId,
-      course: courseId,
+    const {
+      studentId,
+      courseId,
       semester,
-      scores: { mid, quiz, assignment, final },
-      total,
-      locked: true
-    });
+      mid,
+      quiz,
+      assignment,
+      final,
+      isDraft
+    } = req.body;
 
-    // If semester 2 submitted → calculate year total
-    if (semester === 2) {
-      const sem1 = await Grade.findOne({
-        student: studentId,
-        teacher: teacherId,
-        course: courseId,
-        semester: 1
-      });
-
-      if (sem1) {
-        const yearTotal = (sem1.total + grade.total) / 2;
-        const status = yearTotal >= 50 ? "PASS" : "FAIL";
-
-        sem1.yearTotal = yearTotal;
-        sem1.status = status;
-        await sem1.save();
-
-        grade.yearTotal = yearTotal;
-        grade.status = status;
-        await grade.save();
-      }
+    if (!studentId || !courseId || !semester) {
+      return res.status(400).json({ message: "Missing required fields" });
     }
 
-    res.status(201).json({
-      message: "Grade submitted successfully",
-      grade
-    });
+    // Convert all scores to safe numeric values
+    const midScore = Number(mid) || 0;
+    const quizScore = Number(quiz) || 0;
+    const assignmentScore = Number(assignment) || 0;
+    const finalScore = Number(final) || 0;
 
-  } catch (error) {
-    console.error("Grade Submission Error:", error);
-    res.status(500).json({ message: "Server error" });
+    // Default values for draft
+    let total = null;
+    let status = null;
+    let locked = false;
+
+    // ✔ FINAL SUBMIT VALIDATION
+    if (!isDraft) {
+      const weights = await GradingSetting.findOne();
+
+      if (!weights)
+        return res.status(400).json({ message: "Grading settings not found" });
+
+      const valid =
+        midScore <= weights.midWeight &&
+        quizScore <= weights.quizWeight &&
+        assignmentScore <= weights.assignmentWeight &&
+        finalScore <= weights.finalWeight;
+
+      if (!valid) {
+        return res.status(400).json({ message: "Score exceeds maximum allowed" });
+      }
+
+      total = midScore + quizScore + assignmentScore + finalScore;
+      total = Number(total.toFixed(2)); // decimals allowed
+
+      status = total >= 50 ? "PASS" : "FAIL";
+      locked = true;
+    }
+
+    // ✔ UPDATE OR CREATE
+    const grade = await Grade.findOneAndUpdate(
+      {
+        student: studentId,
+        course: courseId,
+        teacher: req.user.id,
+        semester,
+      },
+      {
+        scores: {
+          mid: midScore,
+          quiz: quizScore,
+          assignment: assignmentScore,
+          final: finalScore,
+          total,
+        },
+        status,
+        locked,
+      },
+      { new: true, upsert: true }
+    );
+
+    res.status(201).json({ success: true, grade });
+  } catch (err) {
+    console.error("Submit Grade Error:", err);
+    res.status(500).json({ message: "Server Error" });
   }
 };
 
+
+
+
+//--------------------------------------------------
+// TEACHER VIEW
+//--------------------------------------------------
 export const getTeacherGrades = async (req, res) => {
   try {
     const teacherId = req.user.id;
-    const { courseId, grade, section, stream } = req.query;
 
     const grades = await Grade.find({ teacher: teacherId })
       .populate("student", "username fullName grade section stream")
@@ -93,6 +105,10 @@ export const getTeacherGrades = async (req, res) => {
   }
 };
 
+
+//--------------------------------------------------
+// ADMIN VIEW
+//--------------------------------------------------
 export const getAllGrades = async (req, res) => {
   try {
     const grades = await Grade.find()
@@ -107,6 +123,10 @@ export const getAllGrades = async (req, res) => {
   }
 };
 
+
+//--------------------------------------------------
+// PARENT VIEW
+//--------------------------------------------------
 export const getParentGrades = async (req, res) => {
   try {
     const parentId = req.user.id;
@@ -126,6 +146,10 @@ export const getParentGrades = async (req, res) => {
   }
 };
 
+
+//--------------------------------------------------
+// STUDENT VIEW
+//--------------------------------------------------
 export const getStudentGrades = async (req, res) => {
   try {
     const studentId = req.user.id;
@@ -141,4 +165,52 @@ export const getStudentGrades = async (req, res) => {
 };
 
 
+export const saveDraft = async (req, res) => {
+  try {
+    const { studentId, courseId, semester, mid, quiz, assignment, final } = req.body;
+    const teacherId = req.user.id;
+
+    const toNumber = (v) => (v !== null && v !== undefined ? Number(v) : 0);
+
+    const total =
+      toNumber(mid) +
+      toNumber(quiz) +
+      toNumber(assignment) +
+      toNumber(final);
+
+    const updated = await Grade.findOneAndUpdate(
+      { student: studentId, course: courseId, teacher: teacherId, semester },
+      {
+        scores: { mid, quiz, assignment, final, total },
+        status: null,
+        locked: false,  // ✔ DRAFT
+      },
+      { upsert: true, new: true }
+    );
+
+    res.status(200).json({ message: "Draft Saved", grade: updated });
+  } catch (err) {
+    console.error("Grade Draft Save Error:", err);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+
+
+export const unlockGrade = async (req, res) => {
+  try {
+    const { gradeId } = req.body;
+
+    const updated = await Grade.findByIdAndUpdate(
+      gradeId,
+      { locked: false },
+      { new: true }
+    );
+
+    res.status(200).json({ message: "Grade Unlocked", grade: updated });
+  } catch (err) {
+    console.error("Grade Unlock Error:", err);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
 
