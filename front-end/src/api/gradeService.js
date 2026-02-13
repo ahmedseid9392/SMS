@@ -22,3 +22,12 @@ export const submitFinalGrade = (data) => {
 // Get teacher submitted grades
 export const getTeacherGrades = () => api.get("/grades/teacher");
 
+export const getGradesForClass = async (classId) => {
+  const res = await api.get(`/grades/class/${classId}`);
+  return res.data.grades;
+};
+
+export const getSemesterTotals = async (studentId, courseId) => {
+  const res = await api.get(`/grades/semester-totals/${studentId}/${courseId}`);
+  return res.data;
+};

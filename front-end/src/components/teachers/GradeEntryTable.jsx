@@ -1,15 +1,23 @@
 import { useState, useEffect } from "react";
-import { submitFinalGrade, saveGradeDraft } from "../../api/gradeService";
+import {
+  submitFinalGrade,
+  saveGradeDraft,
+  getGradesForClass,
+  getSemesterTotals,
+} from "../../api/gradeService";
 import { toast } from "react-hot-toast";
 
 export default function GradeEntryTable({ selectedClass, weights }) {
   const [grades, setGrades] = useState({});
   const [submitted, setSubmitted] = useState({});
+  const [semesterExtras, setSemesterExtras] = useState({});
+  const [selectedSemester, setSelectedSemester] = useState(1);
+
   const students = selectedClass.students;
 
-  // -------------------------
-  // HANDLE INPUT CHANGE
-  // -------------------------
+  // ---------------------------------------------------
+  // HANDLE INPUT CHANGES
+  // ---------------------------------------------------
   const handleChange = (studentId, field, value) => {
     setGrades((prev) => ({
       ...prev,
@@ -20,71 +28,102 @@ export default function GradeEntryTable({ selectedClass, weights }) {
     }));
   };
 
-  // -------------------------
-  // TOTAL CALCULATION (RAW)
-  // -------------------------
+  // ---------------------------------------------------
+  // TOTAL CALCULATION
+  // ---------------------------------------------------
   const calculateTotal = (scores) => {
-  if (!scores) return 0;
+    if (!scores) return 0;
 
-  const MAX = {
-    mid: weights.midWeight,
-    quiz: weights.quizWeight,
-    assignment: weights.assignmentWeight,
-    final: weights.finalWeight,
+    const MAX = {
+      mid: weights.midWeight,
+      quiz: weights.quizWeight,
+      assignment: weights.assignmentWeight,
+      final: weights.finalWeight,
+    };
+
+    if (
+      scores.mid > MAX.mid ||
+      scores.quiz > MAX.quiz ||
+      scores.assignment > MAX.assignment ||
+      scores.final > MAX.final
+    ) {
+      return "Invalid";
+    }
+
+    const total =
+      (scores.mid || 0) +
+      (scores.quiz || 0) +
+      (scores.assignment || 0) +
+      (scores.final || 0);
+
+    return Number(total.toFixed(2));
   };
 
-  // validation
-  if (
-    scores.mid > MAX.mid ||
-    scores.quiz > MAX.quiz ||
-    scores.assignment > MAX.assignment ||
-    scores.final > MAX.final
-  ) {
-    return "Invalid";
-  }
-
-  const total =
-    (scores.mid || 0) +
-    (scores.quiz || 0) +
-    (scores.assignment || 0) +
-    (scores.final || 0);
-
-  return Number(total.toFixed(2));
-};
-
-
-  // -------------------------
-  // LOAD SAVED OR SUBMITTED
-  // -------------------------
+  // ---------------------------------------------------
+  // LOAD SAVED + SUBMITTED GRADES
+  // ---------------------------------------------------
   useEffect(() => {
     if (!selectedClass) return;
 
-    const loaded = {};
-    const submittedStatus = {};
+    const fetchGrades = async () => {
+      try {
+        const savedGrades = await getGradesForClass(
+          selectedClass.classInfo.courseId
+        );
 
-    selectedClass.students.forEach((st) => {
-      if (st.scores) {
-        loaded[st._id] = {
-          mid: st.scores.mid ?? "",
-          quiz: st.scores.quiz ?? "",
-          assignment: st.scores.assignment ?? "",
-          final: st.scores.final ?? "",
-        };
+        const loaded = {};
+        const submittedMap = {};
 
-        // IF NOT DRAFT → SUBMITTED
-        if (st.scores.isDraft === false) {
-          submittedStatus[st._id] = true;
+        // load saved scores
+        savedGrades.forEach((g) => {
+          const id = g.student._id;
+
+          loaded[id] = {
+            mid: g.scores?.mid ?? "",
+            quiz: g.scores?.quiz ?? "",
+            assignment: g.scores?.assignment ?? "",
+            final: g.scores?.final ?? "",
+          };
+
+          if (g.locked) {
+            submittedMap[id] = true;
+          }
+        });
+
+        setGrades(loaded);
+        setSubmitted(submittedMap);
+
+        // ---- Semester 2 extras ----
+        if (selectedSemester === 2) {
+          const extra = {};
+
+          for (const st of students) {
+            const totals = await getSemesterTotals(
+              st._id,
+              selectedClass.classInfo.courseId
+            );
+
+            extra[st._id] = {
+              sem1: totals.sem1 || 0,
+              sem2: totals.sem2 || 0,
+              average: totals.average || 0,
+            };
+          }
+
+          setSemesterExtras(extra);
         }
+      } catch (err) {
+        console.error("LOAD ERROR:", err);
+        toast.error("Failed to load saved grades");
       }
-    });
+    };
 
-    setGrades(loaded);
-    setSubmitted(submittedStatus);
-  }, [selectedClass]);
+    fetchGrades();
+  }, [selectedClass, selectedSemester]);
 
-  // -------------------------
-  // SUBMIT FINAL
-  // -------------------------
+  // ---------------------------------------------------
+  // SUBMIT FINAL (LOCK)
+  // ---------------------------------------------------
   const handleSubmitFinal = async (student) => {
     const scores = grades[student._id];
 
@@ -92,7 +131,6 @@ export default function GradeEntryTable({ selectedClass, weights }) {
       return toast.error("Already submitted");
     }
 
-    // Required fields check
     if (
       scores.mid === "" ||
       scores.quiz === "" ||
@@ -102,59 +140,50 @@ export default function GradeEntryTable({ selectedClass, weights }) {
       return toast.error("All fields are required before submitting");
     }
 
-    // Max score validation
     if (calculateTotal(scores) === "Invalid") {
       return toast.error("Score exceeds maximum allowed");
     }
 
     try {
-      const payload = {
+      await submitFinalGrade({
         studentId: student._id,
         courseId: selectedClass.classInfo.courseId,
-        semester: 1,
-        mid: Number(scores.mid),
-        quiz: Number(scores.quiz),
-        assignment: Number(scores.assignment),
-        final: Number(scores.final),
+        semester: selectedSemester,
+        mid: scores.mid,
+        quiz: scores.quiz,
+        assignment: scores.assignment,
+        final: scores.final,
         isDraft: false,
-      };
-
-      await submitFinalGrade(payload);
+      });
 
       setSubmitted((prev) => ({ ...prev, [student._id]: true }));
-
-      toast.success("Final grade submitted");
+      toast.success("Grade submitted");
     } catch (err) {
       toast.error(err.response?.data?.message || "Submit failed");
     }
   };
 
-  // -------------------------
-  // SAVE DRAFT (UPSERT)
-  // -------------------------
+  // ---------------------------------------------------
+  // SAVE DRAFT
+  // ---------------------------------------------------
   const handleSaveDraft = async (student) => {
     const scores = grades[student._id];
 
-    // Save empty allowed? YES (as draft)
     if (calculateTotal(scores) === "Invalid") {
       return toast.error("Score exceeds maximum allowed");
     }
 
     try {
-      const payload = {
+      await saveGradeDraft({
         studentId: student._id,
         courseId: selectedClass.classInfo.courseId,
-        semester: 1,
+        semester: selectedSemester,
         mid: scores.mid ?? null,
         quiz: scores.quiz ?? null,
         assignment: scores.assignment ?? null,
         final: scores.final ?? null,
-        status: null, // REQUIRED BY YOU
-        locked: false, // REQUIRED BY YOU
         isDraft: true,
-      };
-
-      await saveGradeDraft(payload);
+      });
 
       toast.success("Draft saved");
     } catch (err) {
@@ -162,9 +191,22 @@ export default function GradeEntryTable({ selectedClass, weights }) {
     }
   };
 
+  // ---------------------------------------------------
+  // UI
+  // ---------------------------------------------------
   return (
     <div className="mt-6 p-4 bg-white dark:bg-gray-900 rounded-xl shadow">
       <h2 className="text-xl font-bold mb-4">Students List</h2>
+
+      {/* SEMESTER DROPDOWN WITH STYLE */}
+      <select
+        className="mb-4 px-3 py-2 border rounded-lg bg-gray-100 dark:bg-gray-800 dark:text-white"
+        value={selectedSemester}
+        onChange={(e) => setSelectedSemester(Number(e.target.value))}
+      >
+        <option value="1">Semester 1</option>
+        <option value="2">Semester 2</option>
+      </select>
 
       <div className="overflow-x-auto">
         <table className="w-full border dark:border-gray-700 rounded-lg">
@@ -172,6 +214,16 @@ export default function GradeEntryTable({ selectedClass, weights }) {
             <tr>
               <th className="p-2">Username</th>
               <th className="p-2">Full Name</th>
+
+              {/* Semester 2 Columns */}
+              {selectedSemester === 2 && (
+                <>
+                  <th className="p-2">Sem 1 Total</th>
+                  <th className="p-2">Sem 2 Total</th>
+                  <th className="p-2">Average</th>
+                </>
+              )}
+
               <th className="p-2">{weights.midWeight}</th>
               <th className="p-2">{weights.quizWeight}</th>
               <th className="p-2">{weights.assignmentWeight}</th>
@@ -191,66 +243,39 @@ export default function GradeEntryTable({ selectedClass, weights }) {
                   <td className="p-2">{student.username}</td>
                   <td className="p-2">{student.fullName}</td>
 
-                  {/* MID */}
-                  <td className="p-2">
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={g.mid}
-                      disabled={submitted[student._id]}
-                      className="w-full rounded bg-gray-100 dark:bg-gray-800 p-1"
-                      onChange={(e) =>
-                        handleChange(student._id, "mid", e.target.value)
-                      }
-                    />
-                  </td>
+                  {/* Semester 2 Data */}
+                  {selectedSemester === 2 && (
+                    <>
+                      <td className="p-2">
+                        {semesterExtras[student._id]?.sem1 || 0}
+                      </td>
+                      <td className="p-2">
+                        {semesterExtras[student._id]?.sem2 || 0}
+                      </td>
+                      <td className="p-2">
+                        {semesterExtras[student._id]?.average || "-"}
+                      </td>
+                    </>
+                  )}
 
-                  {/* QUIZ */}
-                  <td className="p-2">
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={g.quiz}
-                      disabled={submitted[student._id]}
-                      className="w-full rounded bg-gray-100 dark:bg-gray-800 p-1"
-                      onChange={(e) =>
-                        handleChange(student._id, "quiz", e.target.value)
-                      }
-                    />
-                  </td>
+                  {/* INPUT FIELDS */}
+                  {["mid", "quiz", "assignment", "final"].map((field) => (
+                    <td className="p-2" key={field}>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={g[field]}
+                        disabled={submitted[student._id]}
+                        className="w-full rounded bg-gray-100 dark:bg-gray-800 p-1"
+                        onChange={(e) =>
+                          handleChange(student._id, field, e.target.value)
+                        }
+                      />
+                    </td>
+                  ))}
 
-                  {/* ASSIGNMENT */}
-                  <td className="p-2">
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={g.assignment}
-                      disabled={submitted[student._id]}
-                      className="w-full rounded bg-gray-100 dark:bg-gray-800 p-1"
-                      onChange={(e) =>
-                        handleChange(student._id, "assignment", e.target.value)
-                      }
-                    />
-                  </td>
-
-                  {/* FINAL */}
-                  <td className="p-2">
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={g.final}
-                      disabled={submitted[student._id]}
-                      className="w-full rounded bg-gray-100 dark:bg-gray-800 p-1"
-                      onChange={(e) =>
-                        handleChange(student._id, "final", e.target.value)
-                      }
-                    />
-                  </td>
-
-                  {/* TOTAL */}
                   <td className="p-2 font-bold">{total}</td>
 
-                  {/* ACTION BUTTONS */}
                   <td className="p-2 flex flex-col gap-2">
                     {!submitted[student._id] ? (
                       <>
