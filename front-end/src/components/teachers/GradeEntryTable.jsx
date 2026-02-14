@@ -12,8 +12,14 @@ export default function GradeEntryTable({ selectedClass, weights }) {
   const [submitted, setSubmitted] = useState({});
   const [semesterExtras, setSemesterExtras] = useState({});
   const [selectedSemester, setSelectedSemester] = useState(1);
+ const [search, setSearch] = useState("");
 
   const students = selectedClass.students;
+ 
+ 
+
+
+
 
   // ---------------------------------------------------
   // HANDLE INPUT CHANGES
@@ -31,95 +37,89 @@ export default function GradeEntryTable({ selectedClass, weights }) {
   // ---------------------------------------------------
   // TOTAL CALCULATION
   // ---------------------------------------------------
-  const calculateTotal = (scores) => {
-    if (!scores) return 0;
+ const calculateTotal = (scores) => {
+  if (!scores) return 0;
 
-    const MAX = {
-      mid: weights.midWeight,
-      quiz: weights.quizWeight,
-      assignment: weights.assignmentWeight,
-      final: weights.finalWeight,
-    };
-
-    if (
-      scores.mid > MAX.mid ||
-      scores.quiz > MAX.quiz ||
-      scores.assignment > MAX.assignment ||
-      scores.final > MAX.final
-    ) {
-      return "Invalid";
-    }
-
-    const total =
-      (scores.mid || 0) +
-      (scores.quiz || 0) +
-      (scores.assignment || 0) +
-      (scores.final || 0);
-
-    return Number(total.toFixed(2));
+  const MAX = {
+    mid: weights.midWeight,
+    quiz: weights.quizWeight,
+    assignment: weights.assignmentWeight,
+    final: weights.finalWeight,
   };
+
+  if (
+    scores.mid > MAX.mid ||
+    scores.quiz > MAX.quiz ||
+    scores.assignment > MAX.assignment ||
+    scores.final > MAX.final
+  ) {
+    return "Invalid";
+  }
+
+  const total =
+    (scores.mid || 0) +
+    (scores.quiz || 0) +
+    (scores.assignment || 0) +
+    (scores.final || 0);
+
+  return Number(total.toFixed(2));
+};
+
 
   // ---------------------------------------------------
   // LOAD SAVED + SUBMITTED GRADES
   // ---------------------------------------------------
-  useEffect(() => {
-    if (!selectedClass) return;
+ useEffect(() => {
+  if (!selectedClass) return;
 
-    const fetchGrades = async () => {
-      try {
-        const savedGrades = await getGradesForClass(
-          selectedClass.classInfo.courseId
-        );
+  const fetchGrades = async () => {
+    try {
+      const savedGrades = await getGradesForClass(selectedClass.classInfo.courseId);
 
-        const loaded = {};
-        const submittedMap = {};
+      const loaded = {};
+      const submittedMap = {};
+      const extras = {};
 
-        // load saved scores
-        savedGrades.forEach((g) => {
-          const id = g.student._id;
+      for (const g of savedGrades) {
+        const id = g.student._id;
+        const semKey = selectedSemester === 1 ? "sem1" : "sem2";
 
-          loaded[id] = {
-            mid: g.scores?.mid ?? "",
-            quiz: g.scores?.quiz ?? "",
-            assignment: g.scores?.assignment ?? "",
-            final: g.scores?.final ?? "",
-          };
+        // Load correct semester fields
+        loaded[id] = {
+          mid: g.scores?.[semKey]?.mid ?? "",
+          quiz: g.scores?.[semKey]?.quiz ?? "",
+          assignment: g.scores?.[semKey]?.assignment ?? "",
+          final: g.scores?.[semKey]?.final ?? ""
+        };
 
-          if (g.locked) {
-            submittedMap[id] = true;
-          }
-        });
-
-        setGrades(loaded);
-        setSubmitted(submittedMap);
-
-        // ---- Semester 2 extras ----
-        if (selectedSemester === 2) {
-          const extra = {};
-
-          for (const st of students) {
-            const totals = await getSemesterTotals(
-              st._id,
-              selectedClass.classInfo.courseId
-            );
-
-            extra[st._id] = {
-              sem1: totals.sem1 || 0,
-              sem2: totals.sem2 || 0,
-              average: totals.average || 0,
-            };
-          }
-
-          setSemesterExtras(extra);
+        if (g.scores?.[semKey]?.locked) {
+          submittedMap[id] = true;
         }
-      } catch (err) {
-        console.error("LOAD ERROR:", err);
-        toast.error("Failed to load saved grades");
-      }
-    };
 
-    fetchGrades();
-  }, [selectedClass, selectedSemester]);
+        // For semester 2 → load extras (sem1 total and average)
+        if (selectedSemester === 2) {
+          const totals = await getSemesterTotals(id, selectedClass.classInfo.courseId);
+          extras[id] = {
+            sem1: totals.sem1,
+            sem2: totals.sem2,
+            average: totals.average
+          };
+        }
+      }
+
+      setGrades(loaded);
+      setSubmitted(submittedMap);
+      setSemesterExtras(extras);
+
+    } catch (err) {
+      console.error("LOAD ERROR:", err);
+      toast.error("Failed to load saved grades");
+    }
+  };
+
+  fetchGrades();
+}, [selectedClass, selectedSemester]);
+
 
   // ---------------------------------------------------
   // SUBMIT FINAL (LOCK)
@@ -146,15 +146,15 @@ export default function GradeEntryTable({ selectedClass, weights }) {
 
     try {
       await submitFinalGrade({
-        studentId: student._id,
-        courseId: selectedClass.classInfo.courseId,
-        semester: selectedSemester,
-        mid: scores.mid,
-        quiz: scores.quiz,
-        assignment: scores.assignment,
-        final: scores.final,
-        isDraft: false,
-      });
+  studentId: student._id,
+  courseId: selectedClass.classInfo.courseId,
+  semester: selectedSemester,
+  mid: scores.mid,
+  quiz: scores.quiz,
+  assignment: scores.assignment,
+  final: scores.final,
+  isDraft: false
+});
 
       setSubmitted((prev) => ({ ...prev, [student._id]: true }));
       toast.success("Grade submitted");
@@ -174,16 +174,18 @@ export default function GradeEntryTable({ selectedClass, weights }) {
     }
 
     try {
-      await saveGradeDraft({
-        studentId: student._id,
-        courseId: selectedClass.classInfo.courseId,
-        semester: selectedSemester,
-        mid: scores.mid ?? null,
-        quiz: scores.quiz ?? null,
-        assignment: scores.assignment ?? null,
-        final: scores.final ?? null,
-        isDraft: true,
-      });
+     await saveGradeDraft({
+  studentId: student._id,
+  courseId: selectedClass.classInfo.courseId,
+  semester: selectedSemester,
+  mid: scores.mid,
+  quiz: scores.quiz,
+  assignment: scores.assignment,
+  final: scores.final,
+  isDraft: true
+});
+
+
 
       toast.success("Draft saved");
     } catch (err) {
@@ -199,7 +201,7 @@ export default function GradeEntryTable({ selectedClass, weights }) {
       <h2 className="text-xl font-bold mb-4">Students List</h2>
 
       {/* SEMESTER DROPDOWN WITH STYLE */}
-      <select
+    <select
         className="mb-4 px-3 py-2 border rounded-lg bg-gray-100 dark:bg-gray-800 dark:text-white"
         value={selectedSemester}
         onChange={(e) => setSelectedSemester(Number(e.target.value))}
@@ -207,6 +209,14 @@ export default function GradeEntryTable({ selectedClass, weights }) {
         <option value="1">Semester 1</option>
         <option value="2">Semester 2</option>
       </select>
+      <input
+  type="text"
+  placeholder="Search by username or full name..."
+  className="mb-4 px-3 py-2 border rounded-lg w-full bg-gray-100 dark:bg-gray-800 dark:text-white"
+  value={search}
+  onChange={(e) => setSearch(e.target.value.toLowerCase())}
+/>
+
 
       <div className="overflow-x-auto">
         <table className="w-full border dark:border-gray-700 rounded-lg">
@@ -234,7 +244,17 @@ export default function GradeEntryTable({ selectedClass, weights }) {
           </thead>
 
           <tbody>
-            {students.map((student) => {
+           {students
+  .filter((s) => {
+    const term = search.trim();
+    if (!term) return true;
+    return (
+      s.username.toLowerCase().includes(term) ||
+      s.fullName.toLowerCase().includes(term)
+    );
+  })
+  .map((student) => {
+
               const g = grades[student._id] || {};
               const total = calculateTotal(g);
 
@@ -249,9 +269,8 @@ export default function GradeEntryTable({ selectedClass, weights }) {
                       <td className="p-2">
                         {semesterExtras[student._id]?.sem1 || 0}
                       </td>
-                      <td className="p-2">
-                        {semesterExtras[student._id]?.sem2 || 0}
-                      </td>
+                      <td className="p-2">{total}</td>
+
                       <td className="p-2">
                         {semesterExtras[student._id]?.average || "-"}
                       </td>

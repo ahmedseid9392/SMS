@@ -31,3 +31,6 @@ export const getSemesterTotals = async (studentId, courseId) => {
   const res = await api.get(`/grades/semester-totals/${studentId}/${courseId}`);
   return res.data;
 };
+
+
+

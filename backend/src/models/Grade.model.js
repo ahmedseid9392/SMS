@@ -5,19 +5,30 @@ const GradeSchema = new mongoose.Schema({
   teacher: { type: mongoose.Schema.Types.ObjectId, ref: "Teacher", required: true },
   course: { type: mongoose.Schema.Types.ObjectId, ref: "Course", required: true },
 
-  semester: { type: Number, required: true },
-
   scores: {
-    mid: { type: Number, default: null },
-    quiz: { type: Number, default: null },
-    assignment: { type: Number, default: null },
-    final: { type: Number, default: null },
-    total: { type: Number, default: null },
+    sem1: {
+      mid: Number,
+      quiz: Number,
+      assignment: Number,
+      final: Number,
+      total: Number,
+      locked: { type: Boolean, default: false },
+      status: { type: String, default: null }
+    },
+    sem2: {
+      mid: Number,
+      quiz: Number,
+      assignment: Number,
+      final: Number,
+      total: Number,
+      locked: { type: Boolean, default: false },
+      status: { type: String, default: null }
+    }
   },
 
-  status: { type: String, default: null }, // null until submit
-  locked: { type: Boolean, default: false }, // false for drafts
+  average: { type: Number, default: null }
 
 }, { timestamps: true });
 
 export default mongoose.model("Grade", GradeSchema);
+
