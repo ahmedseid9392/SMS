@@ -7,7 +7,13 @@ import {
   getParentGrades,
   getStudentGrades,
   getGradesForClass,
-  getStudentSemesterTotals
+  getStudentSemesterTotals,
+
+  adminComputeSemesterTotals,
+  adminComputeRanking,
+  adminComputeTop3,
+   adminReleaseGrades,
+   unlockGrade
 } from "../controllers/Grade.controller.js";
 
 const router = express.Router();
@@ -21,6 +27,15 @@ router.get("/student", protect, getStudentGrades);
 router.get("/class/:classId", protect, getGradesForClass);
 router.get(
   "/semester-totals/:studentId/:courseId",protect,getStudentSemesterTotals);
+
+  //admin route
+router.post("/compute-totals", protect, adminComputeSemesterTotals);
+router.post("/compute-ranking", protect, adminComputeRanking);
+router.post("/top3", protect, adminComputeTop3);
+router.post("/release", protect, adminReleaseGrades);
+router.post("/grades/unlock/:studentId/:courseId", unlockGrade);
+
+
 
 
 export default router;

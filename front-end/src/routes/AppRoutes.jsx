@@ -14,6 +14,7 @@ import TeacherForm from "../components/teachers/TeacherForm"
 import CourseFormModal from "../components/courses/CourseFormModal"
 import AssignmentForm from "../components/Assignment/AssignmentForm"
 import  TeacherAssignment from "../pages/admin/TeacherAssignment"
+import  GradeDashboard from "../pages/admin/GradeDashboard"
 
 import TeacherDashboard from "../pages/teacher/Dashboard";
 import Attendance from "../pages/teacher/Attendance";
@@ -74,6 +75,14 @@ const AppRoutes = () => (
   element={
     <ProtectedRoute>
      < TeacherAssignment/>
+    </ProtectedRoute>
+  }
+/>
+     <Route
+  path="/admin/grades"
+  element={
+    <ProtectedRoute>
+     < GradeDashboard/>
     </ProtectedRoute>
   }
 />

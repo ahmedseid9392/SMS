@@ -134,24 +134,31 @@ export const getAssignedClassesAndStudents = async (req, res) => {
 
     const results = [];
 
-    for (const a of assignments) {
-      const students = await Student.find({
-        grade: Number(a.grade),
-        stream: { $regex: `^${a.stream}$`, $options: "i" },
-        section: { $regex: `^${a.section}$`, $options: "i" },
-      });
+   for (const a of assignments) {
+  let query = {
+    grade: Number(a.grade),
+    section: a.section,
+  };
 
-      results.push({
-        classInfo: {
-          grade: a.grade,
-          section: a.section,
-          stream: a.stream,
-          course: a.course?.name,
-          courseId: a.course?._id, // FIXED
-        },
-        students,
-      });
-    }
+  // Only match stream for grade 11 & 12
+  if (a.grade === 11 || a.grade === 12) {
+    query.stream = a.stream;
+  }
+
+  const students = await Student.find(query).lean();
+
+  results.push({
+    classInfo: {
+      grade: a.grade,
+      section: a.section,
+      stream: a.stream,
+      course: a.course?.name,
+      courseId: a.course?._id,
+    },
+    students,
+  });
+}
+
 
     res.status(200).json(results);
 

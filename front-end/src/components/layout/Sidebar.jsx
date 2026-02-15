@@ -19,6 +19,7 @@ const Sidebar = () => {
     { to: "/admin/courses", label: "Courses", icon: "👩‍🏫" },
     { to: "/admin/assignment", label: "Teacher Assignment", icon: "👩‍🏫" },
     { to: "/admin/classes", label: "Classes", icon: "🏫" },
+    { to: "/admin/grades", label: "Grade", icon: "🏫" },
   ];
 
   const teacherLinks = [

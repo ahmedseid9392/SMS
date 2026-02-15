@@ -15,96 +15,188 @@ export const submitGrade = async (req, res) => {
       isDraft
     } = req.body;
 
-    if (!studentId || !courseId || !semester) {
-      return res.status(400).json({ message: "Missing required fields" });
-    }
+    const teacherId = req.user.id;
 
-    const semKey = semester === 1 ? "sem1" : "sem2";
-
-    const midScore = Number(mid) || 0;
-    const quizScore = Number(quiz) || 0;
-    const assignmentScore = Number(assignment) || 0;
-    const finalScore = Number(final) || 0;
-
-    const total = midScore + quizScore + assignmentScore + finalScore;
-
-    // LOAD EXISTING DOC
-    let grade = await Grade.findOne({
-      student: studentId,
-      teacher: req.user.id,
-      course: courseId
-    });
-
-    if (!grade) {
-      grade = new Grade({
-        student: studentId,
-        teacher: req.user.id,
-        course: courseId
-      });
-    }
-
-    // DRAFT SAVE
-    if (isDraft) {
-      grade.scores[semKey] = {
-        mid: midScore,
-        quiz: quizScore,
-        assignment: assignmentScore,
-        final: finalScore,
-        total,
-        status: null,
-        locked: false
-      };
-
-      await grade.save();
-      return res.json({ success: true, draft: true, grade });
-    }
-
-    // FINAL SUBMIT
     const weights = await GradingSetting.findOne();
-    if (!weights) {
-      return res.status(400).json({ message: "Grading settings not found" });
-    }
+    if (!weights) return res.status(400).json({ message: "Grading settings missing" });
 
-    const valid =
-      midScore <= weights.midWeight &&
-      quizScore <= weights.quizWeight &&
-      assignmentScore <= weights.assignmentWeight &&
-      finalScore <= weights.finalWeight;
+    const sanitized = {
+      mid: Number(mid) || 0,
+      quiz: Number(quiz) || 0,
+      assignment: Number(assignment) || 0,
+      final: Number(final) || 0
+    };
 
-    if (!valid) {
+    // validate score limits
+    const invalid =
+      sanitized.mid > weights.midWeight ||
+      sanitized.quiz > weights.quizWeight ||
+      sanitized.assignment > weights.assignmentWeight ||
+      sanitized.final > weights.finalWeight;
+
+    if (invalid) {
       return res.status(400).json({ message: "Score exceeds maximum allowed" });
     }
 
-    grade.scores[semKey] = {
-      mid: midScore,
-      quiz: quizScore,
-      assignment: assignmentScore,
-      final: finalScore,
-      total,
-      locked: true,
-      status: total >= 50 ? "PASS" : "FAIL"
-    };
+    const total =
+      sanitized.mid + sanitized.quiz + sanitized.assignment + sanitized.final;
 
-    // CALCULATE AVERAGE ONLY IF SEM2 SUBMITTED
-    const s1 = grade.scores.sem1?.total;
-    const s2 = grade.scores.sem2?.total;
+    const whole = sem1 => ({
+      ...sem1,
+      mid: sanitized.mid,
+      quiz: sanitized.quiz,
+      assignment: sanitized.assignment,
+      final: sanitized.final,
+      total: Number(total.toFixed(2)),
+      locked: !isDraft
+    });
 
-    if (s1 && s2) {
-      grade.average = Number(((s1 + s2) / 2).toFixed(2));
-    }
+    // update correct semester block
+    const update = semester === 1
+      ? { sem1: whole({}) }
+      : { sem2: whole({}) };
 
-    await grade.save();
+    const grade = await Grade.findOneAndUpdate(
+      { student: studentId, course: courseId, teacher: teacherId },
+      update,
+      { new: true, upsert: true }
+    );
 
     res.json({ success: true, grade });
 
   } catch (err) {
-    console.error("Submit Grade Error:", err);
-    res.status(500).json({ message: "Server Error" });
+    console.error("Submit Error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+//  admin calculate grade
+export const adminComputeSemesterTotals = async (req, res) => {
+  try {
+    const grades = await Grade.find().populate("student");
+
+    const map = {}; // studentId → { sumSem1, sumSem2 }
+
+    grades.forEach(g => {
+      const sid = g.student._id.toString();
+
+      if (!map[sid]) map[sid] = { sumSem1: 0, sumSem2: 0 };
+
+      map[sid].sumSem1 += g.sem1?.total || 0;
+      map[sid].sumSem2 += g.sem2?.total || 0;
+    });
+
+    // update DB
+    for (const grade of grades) {
+      const s = map[grade.student._id.toString()];
+
+      await Grade.updateMany(
+        { student: grade.student._id },
+        {
+          sumSem1: s.sumSem1,
+          sumSem2: s.sumSem2,
+          finalSum: Number(((s.sumSem1 + s.sumSem2) / 2).toFixed(2))
+        }
+      );
+    }
+
+    res.json({ success: true, message: "Semester totals computed" });
+
+  } catch (err) {
+    console.error("Compute Totals Error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+//admin ranking 
+
+export const adminComputeRanking = async (req, res) => {
+  try {
+    const allGrades = await Grade.find().populate("student");
+
+    // group by (grade + section)
+    const sectionGroups = {};
+
+    allGrades.forEach(g => {
+      const student = g.student;
+      const key = `${student.grade}-${student.section}`;
+
+      if (!sectionGroups[key]) sectionGroups[key] = [];
+      sectionGroups[key].push(g);
+    });
+
+    // compute ranking for each section
+    for (const key of Object.keys(sectionGroups)) {
+      const group = sectionGroups[key];
+
+      // sem1 rank
+      group.sort((a, b) => b.sumSem1 - a.sumSem1);
+      group.forEach((g, i) => {
+        g.rankSem1 = i + 1;
+        g.save();
+      });
+
+      // sem2 rank
+      group.sort((a, b) => b.sumSem2 - a.sumSem2);
+      group.forEach((g, i) => {
+        g.rankSem2 = i + 1;
+        g.save();
+      });
+
+      // final rank
+      group.sort((a, b) => b.finalSum - a.finalSum);
+      group.forEach((g, i) => {
+        g.rankFinal = i + 1;
+        g.save();
+      });
+    }
+
+    res.json({ success: true, message: "Ranking computed" });
+
+  } catch (err) {
+    console.error("Ranking error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+//top 3
+export const adminComputeTop3 = async (req, res) => {
+  try {
+    const grades = await Grade.find().populate("student");
+
+    const sorted = grades.sort((a, b) => b.finalSum - a.finalSum);
+
+    // reset all
+    await Grade.updateMany({}, { isTop3: false, top3Position: null });
+
+    // assign top 3
+    sorted.slice(0, 3).forEach((g, index) => {
+      g.isTop3 = true;
+      g.top3Position = index + 1;
+      g.save();
+    });
+
+    res.json({ success: true, message: "Top 3 assigned" });
+
+  } catch (err) {
+    console.error("Top3 Error:", err);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
 
+//admin relese grade to student 
+export const adminReleaseGrades = async (req, res) => {
+  try {
+    await Grade.updateMany({}, { isReleased: true });
 
+    res.json({ success: true, message: "Grades released to students" });
+
+  } catch (err) {
+    console.error("Release Error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
 
 
 
@@ -133,13 +225,94 @@ export const getTeacherGrades = async (req, res) => {
 export const getAllGrades = async (req, res) => {
   try {
     const grades = await Grade.find()
-      .populate("student", "username fullName grade section stream")
+      .populate("student", "fullName grade section stream")
       .populate("teacher", "fullName")
       .populate("course", "name");
 
-    res.json({ grades });
+    const sections = {};
+
+    grades.forEach((g) => {
+      const gradeLevel = g.student.grade;
+      const stream = g.student.stream;
+      const section = g.student.section;
+
+      const sectionKey = `${gradeLevel}-${stream}-${section}`;
+      const studentId = g.student._id.toString();
+      const courseName = g.course.name;
+
+      if (!sections[sectionKey]) {
+        sections[sectionKey] = {
+          meta: {
+            grade: gradeLevel,
+            stream,
+            section,
+            courses: {}
+          },
+          students: {}
+        };
+      }
+
+      // Save teacher per course
+      sections[sectionKey].meta.courses[courseName] =
+        g.teacher?.fullName || "N/A";
+
+      if (!sections[sectionKey].students[studentId]) {
+        sections[sectionKey].students[studentId] = {
+          studentId,
+          fullName: g.student.fullName,
+          courses: {},
+          sumSem1: 0,
+          sumSem2: 0,
+          finalSum: 0,
+          average: 0,
+          rank: 0,
+          status: "Fail"
+        };
+      }
+
+      // ✅ CORRECT TOTAL FETCH
+      const sem1 = g.sem1?.total || 0;
+      const sem2 = g.sem2?.total || 0;
+
+      sections[sectionKey].students[studentId].courses[courseName] = {
+        sem1Total: sem1,
+        sem2Total: sem2
+      };
+
+      sections[sectionKey].students[studentId].sumSem1 += sem1;
+      sections[sectionKey].students[studentId].sumSem2 += sem2;
+    });
+
+    // ✅ Compute Final Calculations
+    Object.keys(sections).forEach((key) => {
+      const studentsArr = Object.values(sections[key].students);
+
+      studentsArr.forEach((s) => {
+        s.finalSum = (s.sumSem1 + s.sumSem2) / 2;
+
+        const totalCourses = Object.keys(s.courses).length;
+
+        s.average = totalCourses
+          ? s.finalSum / totalCourses
+          : 0;
+
+        s.status = s.average >= 50 ? "Pass" : "Fail";
+      });
+
+      // Rank by finalSum
+      studentsArr.sort((a, b) => b.finalSum - a.finalSum);
+
+      studentsArr.forEach((s, i) => {
+               s.rank = i + 1;
+      });
+
+      sections[key].students = studentsArr;
+    });
+
+    res.json({ sections });
+
   } catch (error) {
-    console.error("Get All Grades Error:", error);
+    console.error("Error fetching grades:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -218,20 +391,22 @@ export const saveDraft = async (req, res) => {
 
 
 
+// POST /grades/unlock/:studentId/:courseId
 export const unlockGrade = async (req, res) => {
   try {
-    const { gradeId } = req.body;
+    const { studentId, courseId } = req.params;
 
-    const updated = await Grade.findByIdAndUpdate(
-      gradeId,
-      { locked: false },
-      { new: true }
-    );
+    const grade = await Grade.findOne({ student: studentId, course: courseId });
+    if (!grade) return res.status(404).json({ message: "Grade not found" });
 
-    res.status(200).json({ message: "Grade Unlocked", grade: updated });
-  } catch (err) {
-    console.error("Grade Unlock Error:", err);
-    res.status(500).json({ message: "Server Error" });
+    grade.sem1.locked = false;
+    grade.sem2.locked = false;
+    await grade.save();
+
+    res.json({ message: "Grade unlocked successfully" });
+  } catch (error) {
+    console.error("Unlock Error:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };
 

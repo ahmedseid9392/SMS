@@ -27,10 +27,34 @@ export const getGradesForClass = async (classId) => {
   return res.data.grades;
 };
 
-export const getSemesterTotals = async (studentId, courseId) => {
-  const res = await api.get(`/grades/semester-totals/${studentId}/${courseId}`);
-  return res.data;
+export const getSemesterTotals = (studentId, courseId) =>
+  api.get(`/grades/semester-totals/${studentId}/${courseId}`);
+
+
+// ───────────────────────────────────────────────
+// Admin APIs
+// ───────────────────────────────────────────────
+
+export const getAllGrades = async () => {
+  const res = await api.get("/grades/all");
+  return res.data; // ✅ return data directly
 };
+
+export const adminComputeSemesterTotals = () =>
+  api.post("/grades/compute-totals");
+
+export const adminComputeRanking = () =>
+  api.post("/grades/compute-ranking");
+
+export const adminComputeTop3 = () =>
+  api.post("/grades/top3");
+
+export const adminReleaseGrades = () =>
+  api.post("/grades/release");
+
+export const adminUnlockSpecificGrade = (studentId, courseId) =>
+  api.post(`/grades/unlock/${studentId}/${courseId}`);
+
 
 
 

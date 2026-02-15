@@ -74,38 +74,44 @@ export default function GradeEntryTable({ selectedClass, weights }) {
 
   const fetchGrades = async () => {
     try {
-      const savedGrades = await getGradesForClass(selectedClass.classInfo.courseId);
+      const savedGrades = await getGradesForClass(
+        selectedClass.classInfo.courseId
+      );
 
       const loaded = {};
       const submittedMap = {};
       const extras = {};
 
-      for (const g of savedGrades) {
-        const id = g.student._id;
-        const semKey = selectedSemester === 1 ? "sem1" : "sem2";
+      const semKey = selectedSemester === 1 ? "sem1" : "sem2";
 
-        // Load correct semester fields
-        loaded[id] = {
-          mid: g.scores?.[semKey]?.mid ?? "",
-          quiz: g.scores?.[semKey]?.quiz ?? "",
-          assignment: g.scores?.[semKey]?.assignment ?? "",
-          final: g.scores?.[semKey]?.final ?? ""
-        };
+     for (const g of savedGrades) {
+  const id = g.student._id; // 🔥 FIXED: always use ObjectId string
+  const semKey = selectedSemester === 1 ? "sem1" : "sem2";
 
-        if (g.scores?.[semKey]?.locked) {
-          submittedMap[id] = true;
-        }
+  loaded[id] = {
+    mid: g[semKey]?.mid ?? "",
+    quiz: g[semKey]?.quiz ?? "",
+    assignment: g[semKey]?.assignment ?? "",
+    final: g[semKey]?.final ?? "",
+    total: g[semKey]?.total ?? 0,
+  };
 
-        // For semester 2 → load extras (sem1 total and average)
-        if (selectedSemester === 2) {
-          const totals = await getSemesterTotals(id, selectedClass.classInfo.courseId);
-          extras[id] = {
-            sem1: totals.sem1,
-            sem2: totals.sem2,
-            average: totals.average
-          };
-        }
-      }
+  if (g[semKey]?.locked) submittedMap[id] = true;
+
+  if (selectedSemester === 2) {
+    const totals = await getSemesterTotals(
+      id,
+      selectedClass.classInfo.courseId
+    );
+
+    extras[id] = {
+      sem1Total: totals.sem1 ?? 0,
+      sem2Total: totals.sem2 ?? 0,
+      average: totals.average ?? 0
+    };
+  }
+}
+
 
       setGrades(loaded);
       setSubmitted(submittedMap);
@@ -119,6 +125,7 @@ export default function GradeEntryTable({ selectedClass, weights }) {
 
   fetchGrades();
 }, [selectedClass, selectedSemester]);
+
 
 
   // ---------------------------------------------------
@@ -282,6 +289,7 @@ export default function GradeEntryTable({ selectedClass, weights }) {
                     <td className="p-2" key={field}>
                       <input
                         type="number"
+                        minLength={0}
                         step="0.01"
                         value={g[field]}
                         disabled={submitted[student._id]}
