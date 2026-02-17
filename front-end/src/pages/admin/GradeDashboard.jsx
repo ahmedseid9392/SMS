@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
-import { getAllGrades, adminReleaseGrades } from "../../api/gradeService";
+import { getAllGrades, adminReleaseGrades, adminUnlockSpecificGrade } from "../../api/gradeService";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { generateReportCard } from "../../utils/generateReportCard";
+
 
 const GradeDashboard = () => {
   const [sections, setSections] = useState({});
@@ -33,9 +35,27 @@ const GradeDashboard = () => {
     }
   };
 
+    const handleUnlock = async (gradeId) => {
+  try {
+    await adminUnlockSpecificGrade(gradeId);
+    toast.success("Grade unlocked successfully!");
+
+    // Reload data after unlock
+    const updated = await getAllGrades();
+    setSections(updated.sections);
+
+  } catch (err) {
+    console.error(err);
+    toast.error("Failed to unlock grade");
+  }
+};
+
   if (loading) {
     return <div className="p-6 text-lg">Loading...</div>;
   }
+
+  
+
 
   return (
     <div className="p-6 space-y-12 dark:text-white">
@@ -143,6 +163,8 @@ const GradeDashboard = () => {
                     <th rowSpan="2" className="border p-2">Average</th>
                     <th rowSpan="2" className="border p-2">Rank</th>
                     <th rowSpan="2" className="border p-2">Status</th>
+                     <th rowSpan="2" className="border p-2">Card</th>
+                    <th rowSpan="2" className="border p-2">Unloack</th>
                   </tr>
 
                   <tr className="bg-gray-50 dark:bg-gray-800">
@@ -198,12 +220,25 @@ const GradeDashboard = () => {
                       >
                         {student.status}
                       </td>
-                      <button
-                  onClick={() => adminUnlockSpecificGrade(student.studentId, meta.courses[course])}
-                className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600"
-               >
-              Unlock
-              </button>
+                   {/* GENERATE REPORT CARD BUTTON */}
+    <td className="border p-2 text-center">
+      <button
+        onClick={() => generateReportCard(student, meta)}
+        className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 dark:bg-blue-800 dark:hover:bg-blue-700 text-xs"
+      >
+        PDF
+      </button>
+    </td>
+
+    {/* UNLOCK GRADE BUTTON */}
+    <td className="border p-2 text-center">
+      <button
+        onClick={() =>handleUnlock(student.gradeId)}
+        className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 dark:bg-yellow-700 dark:hover:bg-yellow-600 text-xs"
+      >
+        Unlock
+      </button>
+    </td>
 
                     </tr>
                   ))}

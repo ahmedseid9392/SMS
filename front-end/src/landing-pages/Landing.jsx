@@ -2,7 +2,7 @@ import React from "react";
 import ThemeToggle from "./ThemeToggle";
 import { FaFacebookF, FaTwitter, FaInstagram, FaLinkedinIn } from "react-icons/fa";
 import logo from "../assets/react.svg";
-import heroImage from "../assets/images/hero.png";
+import heroImage from "../assets/images/office-buildings-trees.jpg";
 
 
 const Landing = () => {
