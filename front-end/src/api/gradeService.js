@@ -52,8 +52,10 @@ export const adminComputeTop3 = () =>
 export const adminReleaseGrades = () =>
   api.post("/grades/release");
 
-export const adminUnlockSpecificGrade = (studentId, courseId) =>
-  api.post(`/grades/unlock/${studentId}/${courseId}`);
+export const adminUnlockGrade = (gradeId) =>
+  api.patch(`/grades/unlock/${gradeId}`);
+
+
 
 
 

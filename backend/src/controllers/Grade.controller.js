@@ -394,21 +394,25 @@ export const saveDraft = async (req, res) => {
 // POST /grades/unlock/:studentId/:courseId
 export const unlockGrade = async (req, res) => {
   try {
-    const { studentId, courseId } = req.params;
+    const gradeId = req.params.id;
 
-    const grade = await Grade.findOne({ student: studentId, course: courseId });
+    if (!gradeId) return res.status(400).json({ message: "Missing grade ID" });
+
+    const grade = await Grade.findById(gradeId);
     if (!grade) return res.status(404).json({ message: "Grade not found" });
 
     grade.sem1.locked = false;
     grade.sem2.locked = false;
     await grade.save();
 
-    res.json({ message: "Grade unlocked successfully" });
+    res.json({ message: "Grade Unlocked", grade });
+
   } catch (error) {
     console.error("Unlock Error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
+
 
 
 

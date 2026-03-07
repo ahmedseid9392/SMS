@@ -1,20 +1,34 @@
 import { useEffect, useState } from "react";
-import { getAllGrades, adminReleaseGrades, adminUnlockSpecificGrade } from "../../api/gradeService";
+import { getAllGrades, adminReleaseGrades, adminUnlockGrade } from "../../api/gradeService";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
+
 import { generateReportCard } from "../../utils/generateReportCard";
+
 
 
 const GradeDashboard = () => {
   const [sections, setSections] = useState({});
   const [loading, setLoading] = useState(true);
+   const [year, setYear] = useState("");
+const [availableYears, setAvailableYears] = useState([]);
+
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const data = await getAllGrades();
+
         setSections(data.sections || {});
+
+        const yearList = Object.values(data.sections).map(s => s.meta.year);
+        const uniqueYears = [...new Set(yearList)];
+
+        setAvailableYears(uniqueYears);
+        setYear(uniqueYears[0]); // default year
+
       } catch (error) {
         console.error("Failed to load grades:", error);
       } finally {
@@ -35,20 +49,26 @@ const GradeDashboard = () => {
     }
   };
 
-    const handleUnlock = async (gradeId) => {
+   const handleUnlock = async (gradeId) => {
+  if (!gradeId) {
+    console.error("Missing gradeId");
+    return toast.error("Invalid grade ID");
+  }
+
   try {
-    await adminUnlockSpecificGrade(gradeId);
-    toast.success("Grade unlocked successfully!");
+    await adminUnlockGrade(gradeId);
+    toast.success("Grade unlocked!");
 
-    // Reload data after unlock
-    const updated = await getAllGrades();
-    setSections(updated.sections);
+    // refresh UI
+    const data = await getAllGrades();
+    setSections(data.sections || {});
 
-  } catch (err) {
-    console.error(err);
-    toast.error("Failed to unlock grade");
+  } catch (error) {
+    console.error("Unlock failed:", error);
+    toast.error("Unlock failed");
   }
 };
+
 
   if (loading) {
     return <div className="p-6 text-lg">Loading...</div>;
@@ -77,7 +97,10 @@ const GradeDashboard = () => {
               color: "var(--text)",
               }}>Admin Grade Dashboard</h1>
 
-      {Object.entries(sections).map(([key, sectionData]) => {
+     {Object.entries(sections)
+  .filter(([key, sec]) => sec.meta.year == year)
+  .map(([key, sectionData]) => {
+
         const { meta, students } = sectionData;
         const courseNames = Object.keys(meta.courses);
 
@@ -115,6 +138,19 @@ const GradeDashboard = () => {
                 ))}
               </div>
             </div>
+            <div className="mt-4">
+  <label className="mr-2 font-semibold">Select Year:</label>
+  <select
+    value={year}
+    onChange={(e) => setYear(e.target.value)}
+    className="p-2 border rounded dark:bg-gray-800 dark:text-white"
+  >
+    {availableYears.map((yr) => (
+      <option key={yr} value={yr}>{yr}</option>
+    ))}
+  </select>
+</div>
+
 
             {/* TOP 3 TABLE */}
             <div className="overflow-x-auto">
@@ -232,8 +268,8 @@ const GradeDashboard = () => {
 
     {/* UNLOCK GRADE BUTTON */}
     <td className="border p-2 text-center">
-      <button
-        onClick={() =>handleUnlock(student.gradeId)}
+     <button onClick={() => handleUnlock(student.gradeId)}
+
         className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 dark:bg-yellow-700 dark:hover:bg-yellow-600 text-xs"
       >
         Unlock
