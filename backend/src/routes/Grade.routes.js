@@ -12,8 +12,8 @@ import {
   adminComputeSemesterTotals,
   adminComputeRanking,
   adminComputeTop3,
-   adminReleaseGrades,
- adminUnlockGrade
+   adminReleaseGrades
+
 } from "../controllers/Grade.controller.js";
 
 const router = express.Router();
@@ -33,7 +33,7 @@ router.post("/compute-totals", protect, adminComputeSemesterTotals);
 router.post("/compute-ranking", protect, adminComputeRanking);
 router.post("/top3", protect, adminComputeTop3);
 router.post("/release", protect, adminReleaseGrades);
-router.patch("/unlock/:id", adminUnlockGrade);
+//router.patch("/unlock/:id", adminUnlockGrade);
 
 
 
