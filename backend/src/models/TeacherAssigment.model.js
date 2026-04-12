@@ -1,38 +1,17 @@
 import mongoose from "mongoose";
 
-const TeacherAssignmentSchema = new mongoose.Schema(
-  {
-    grade: {
-      type: Number,
-      required: true,
-      enum: [9, 10, 11, 12]
-    },
-
-    section: {
-      type: String,
-      required: true
-    },
-
-    stream: {
-      type: String,
-      enum: ["Natural", "Social", "None"],
-      default: "None"
-    },
-
-    course: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Course",
-      required: true
-    },
-
-    teacher: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Teacher",
-      required: true
-    }
+const TeacherAssignmentSchema = new mongoose.Schema({
+  teacher: { type: mongoose.Schema.Types.ObjectId, ref: 'Teacher', required: true },
+  course: { type: mongoose.Schema.Types.ObjectId, ref: 'Course', required: true },
+  classInfo: {
+    grade: { type: Number, required: true },
+    section: { type: String, required: true },
+    stream: { type: String }
   },
-  { timestamps: true }
-);
+  students: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Student' }],
+  academicYear: { type: mongoose.Schema.Types.ObjectId, ref: 'AcademicYear' },
+  isActive: { type: Boolean, default: true }
+}, { timestamps: true });
 
 // ❌ Prevent same course having multiple teachers in same grade/section
 TeacherAssignmentSchema.index(

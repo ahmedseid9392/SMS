@@ -22,7 +22,7 @@ import GradeSubmission from "../pages/teacher/GradeSubmission";
 import Classes from "../pages/teacher/Classes";
 
 import StudentDashboard from "../pages/student/Dashboard";
-import Results from "../pages/student/Results";
+import StudentResults from "../pages/student/StudentResults";
 import Assignments from "../pages/student/Assignments";
 import Notifications from "../pages/student/Notifications";
 import AttendanceView from "../pages/student/Attendance";
@@ -206,7 +206,7 @@ const AppRoutes = () => (
         path="/student/results"
         element={
           <ProtectedRoute>
-            <Results />
+           <StudentResults />
           </ProtectedRoute>
         }
       />

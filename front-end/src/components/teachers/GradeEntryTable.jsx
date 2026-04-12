@@ -8,7 +8,7 @@ import {
   getAllAcademicYears,
 } from "../../api/gradeService";
 import { toast } from "react-hot-toast";
-import { Calendar, AlertCircle, CheckCircle, BookOpen, Users, Save, Send, RefreshCw } from "lucide-react";
+import { Calendar, AlertCircle, CheckCircle, BookOpen, Users, Save, Send, RefreshCw, Lock } from "lucide-react";
 
 export default function GradeEntryTable({ selectedClass, weights, onSuccess }) {
   const [grades, setGrades] = useState({});
@@ -47,7 +47,6 @@ export default function GradeEntryTable({ selectedClass, weights, onSuccess }) {
     }
   };
 
-  // Check if semester is active
   const isSemesterActive = () => {
     if (!academicYear) return true;
     const semesterData = academicYear.semesters?.find(s => s.semester === selectedSemester);
@@ -70,6 +69,12 @@ export default function GradeEntryTable({ selectedClass, weights, onSuccess }) {
     const semesterStatus = getSemesterStatus();
     if (!semesterStatus.isActive) {
       toast.error(semesterStatus.message);
+      return;
+    }
+    
+    // Don't allow changes if already submitted
+    if (submitted[studentId]) {
+      toast.error("Grade already submitted. Cannot modify.");
       return;
     }
     
@@ -110,7 +115,7 @@ export default function GradeEntryTable({ selectedClass, weights, onSuccess }) {
     return Number(total.toFixed(2));
   };
 
-  // Load saved grades - FIXED to properly load drafts
+  // Load saved grades
   const loadGrades = async () => {
     if (!selectedClass || !selectedYearId) return;
 
@@ -121,7 +126,6 @@ export default function GradeEntryTable({ selectedClass, weights, onSuccess }) {
         selectedYearId
       );
       
-      // Handle different response structures
       let savedGrades = [];
       if (response.grades) {
         savedGrades = response.grades;
@@ -137,60 +141,79 @@ export default function GradeEntryTable({ selectedClass, weights, onSuccess }) {
 
       const loaded = {};
       const submittedMap = {};
-      const extras = {};
 
       for (const gradeRecord of savedGrades) {
         const studentId = gradeRecord.student?._id || gradeRecord.student;
         const semKey = selectedSemester === 1 ? "sem1" : "sem2";
         
-        // Check for draft grades first
-        const hasDraft = gradeRecord.draft && gradeRecord.draft.semester === selectedSemester;
-        
-        if (hasDraft) {
-          // Load draft grades
-          loaded[studentId] = {
-            mid: gradeRecord.draft.mid ?? "",
-            quiz: gradeRecord.draft.quiz ?? "",
-            assignment: gradeRecord.draft.assignment ?? "",
-            final: gradeRecord.draft.final ?? "",
-            total: gradeRecord.draft.total ?? 0,
-            isDraft: true,
-          };
-          console.log(`Loaded DRAFT for student ${studentId}:`, loaded[studentId]);
-        } else if (gradeRecord[semKey]) {
-          // Load submitted/locked grades
+        // CRITICAL: Check if the grade is LOCKED/SUBMITTED first
+        if (gradeRecord[semKey] && gradeRecord[semKey].locked === true) {
+          // This is a SUBMITTED grade - read only
           loaded[studentId] = {
             mid: gradeRecord[semKey].mid ?? "",
             quiz: gradeRecord[semKey].quiz ?? "",
             assignment: gradeRecord[semKey].assignment ?? "",
             final: gradeRecord[semKey].final ?? "",
             total: gradeRecord[semKey].total ?? 0,
+            isSubmitted: true,
+            isDraft: false,
           };
-          
-          if (gradeRecord[semKey].locked) {
-            submittedMap[studentId] = true;
-          }
-          console.log(`Loaded SUBMITTED for student ${studentId}:`, loaded[studentId]);
+          submittedMap[studentId] = true;
+          console.log(`✅ Loaded SUBMITTED grade for student ${studentId}:`, loaded[studentId]);
+        } 
+        // Check for draft grades (only if not submitted)
+        else if (gradeRecord.draft && gradeRecord.draft.semester === selectedSemester && !gradeRecord[semKey]?.locked) {
+          loaded[studentId] = {
+            mid: gradeRecord.draft.mid ?? "",
+            quiz: gradeRecord.draft.quiz ?? "",
+            assignment: gradeRecord.draft.assignment ?? "",
+            final: gradeRecord.draft.final ?? "",
+            total: gradeRecord.draft.total ?? 0,
+            isSubmitted: false,
+            isDraft: true,
+          };
+          submittedMap[studentId] = false;
+          console.log(`📝 Loaded DRAFT grade for student ${studentId}:`, loaded[studentId]);
+        }
+        // Check for unlocked but existing grades (treat as editable)
+        else if (gradeRecord[semKey] && !gradeRecord[semKey].locked) {
+          loaded[studentId] = {
+            mid: gradeRecord[semKey].mid ?? "",
+            quiz: gradeRecord[semKey].quiz ?? "",
+            assignment: gradeRecord[semKey].assignment ?? "",
+            final: gradeRecord[semKey].final ?? "",
+            total: gradeRecord[semKey].total ?? 0,
+            isSubmitted: false,
+            isDraft: false,
+          };
+          submittedMap[studentId] = false;
+          console.log(`📝 Loaded UNLOCKED grade for student ${studentId}:`, loaded[studentId]);
         }
 
         // Load semester totals for sem2 view
         if (selectedSemester === 2) {
-          const totals = await getSemesterTotals(
-            studentId,
-            selectedClass.classInfo.courseId,
-            selectedYearId
-          );
-          extras[studentId] = {
-            sem1Total: totals.sem1 ?? 0,
-            sem2Total: totals.sem2 ?? 0,
-            average: totals.average ?? 0,
-          };
+          try {
+            const totals = await getSemesterTotals(
+              studentId,
+              selectedClass.classInfo.courseId,
+              selectedYearId
+            );
+            setSemesterExtras(prev => ({
+              ...prev,
+              [studentId]: {
+                sem1Total: totals.sem1 ?? 0,
+                sem2Total: totals.sem2 ?? 0,
+                average: totals.average ?? 0,
+              }
+            }));
+          } catch (err) {
+            console.error("Error loading semester totals:", err);
+          }
         }
       }
 
       setGrades(loaded);
       setSubmitted(submittedMap);
-      setSemesterExtras(extras);
       
       console.log("Final grades state:", loaded);
       console.log("Final submitted state:", submittedMap);
@@ -204,7 +227,6 @@ export default function GradeEntryTable({ selectedClass, weights, onSuccess }) {
     }
   };
 
-  // Refresh grades
   const handleRefresh = () => {
     setRefreshing(true);
     loadGrades();
@@ -222,49 +244,83 @@ export default function GradeEntryTable({ selectedClass, weights, onSuccess }) {
       return;
     }
 
-    const scores = grades[student._id];
+    const currentGrades = grades[student._id];
+    
+    if (!currentGrades) {
+      toast.error("No grades found for this student");
+      return;
+    }
 
     if (submitted[student._id]) {
-      return toast.error("Already submitted");
+      toast.error("Already submitted");
+      return;
     }
 
+    // Check if all fields have values
     if (
-      scores?.mid === "" ||
-      scores?.mid === undefined ||
-      scores?.quiz === "" ||
-      scores?.quiz === undefined ||
-      scores?.assignment === "" ||
-      scores?.assignment === undefined ||
-      scores?.final === "" ||
-      scores?.final === undefined
+      currentGrades.mid === "" ||
+      currentGrades.mid === undefined ||
+      currentGrades.mid === null ||
+      currentGrades.quiz === "" ||
+      currentGrades.quiz === undefined ||
+      currentGrades.quiz === null ||
+      currentGrades.assignment === "" ||
+      currentGrades.assignment === undefined ||
+      currentGrades.assignment === null ||
+      currentGrades.final === "" ||
+      currentGrades.final === undefined ||
+      currentGrades.final === null
     ) {
-      return toast.error("All fields are required before submitting");
+      toast.error("All fields are required before submitting");
+      return;
     }
 
-    if (calculateTotal(scores) === "Invalid") {
-      return toast.error("Score exceeds maximum allowed");
+    const total = calculateTotal(currentGrades);
+    if (total === "Invalid") {
+      toast.error("Score exceeds maximum allowed");
+      return;
     }
 
     setSubmitting(prev => ({ ...prev, [student._id]: true }));
 
     try {
-      await submitFinalGrade({
+      // Submit the grade with isDraft = false
+      const submitData = {
         studentId: student._id,
         courseId: selectedClass.classInfo.courseId,
         semester: selectedSemester,
-        mid: scores.mid,
-        quiz: scores.quiz,
-        assignment: scores.assignment,
-        final: scores.final,
-        isDraft: false,
+        mid: currentGrades.mid,
+        quiz: currentGrades.quiz,
+        assignment: currentGrades.assignment,
+        final: currentGrades.final,
+        isDraft: false,  // IMPORTANT: This tells backend to lock the grade
         academicYearId: selectedYearId,
-      });
-
-      setSubmitted((prev) => ({ ...prev, [student._id]: true }));
-      toast.success(`Grade submitted for ${student.fullName}`);
+      };
       
-      // Reload to get updated data
-      await loadGrades();
+      console.log("Submitting grade with data:", submitData);
+      
+      const response = await submitFinalGrade(submitData);
+      
+      console.log("Submit response:", response);
+
+      // Update local state immediately
+      setSubmitted((prev) => ({ ...prev, [student._id]: true }));
+      setGrades(prev => ({
+        ...prev,
+        [student._id]: {
+          ...prev[student._id],
+          isSubmitted: true,
+          isDraft: false,
+        }
+      }));
+      
+      toast.success(`✅ Grade submitted for ${student.fullName}`);
+      
+      // Reload to get updated data from server
+      setTimeout(() => {
+        loadGrades();
+      }, 1000);
+      
       if (onSuccess) onSuccess();
     } catch (err) {
       console.error("Submit error:", err);
@@ -275,36 +331,64 @@ export default function GradeEntryTable({ selectedClass, weights, onSuccess }) {
   };
 
   const handleSaveDraft = async (student) => {
-    const scores = grades[student._id];
+    const currentGrades = grades[student._id];
     
-    if (!scores?.mid && !scores?.quiz && !scores?.assignment && !scores?.final) {
+    if (!currentGrades) {
+      toast.error("No grades to save");
+      return;
+    }
+    
+    // Don't save if already submitted
+    if (submitted[student._id]) {
+      toast.error("Grade already submitted. Cannot save draft.");
+      return;
+    }
+    
+    // Check if at least one field has a value
+    const hasAnyValue = 
+      (currentGrades.mid && currentGrades.mid !== "") ||
+      (currentGrades.quiz && currentGrades.quiz !== "") ||
+      (currentGrades.assignment && currentGrades.assignment !== "") ||
+      (currentGrades.final && currentGrades.final !== "");
+    
+    if (!hasAnyValue) {
       return toast.error("No grades to save");
     }
 
-    if (calculateTotal(scores) === "Invalid") {
-      return toast.error("Score exceeds maximum allowed");
+    const total = calculateTotal(currentGrades);
+    if (total === "Invalid") {
+      toast.error("Score exceeds maximum allowed");
+      return;
     }
 
     setSaving(prev => ({ ...prev, [student._id]: true }));
 
     try {
-      const response = await saveGradeDraft({
+      const draftData = {
         studentId: student._id,
         courseId: selectedClass.classInfo.courseId,
         semester: selectedSemester,
-        mid: scores.mid || 0,
-        quiz: scores.quiz || 0,
-        assignment: scores.assignment || 0,
-        final: scores.final || 0,
-        isDraft: true,
+        mid: currentGrades.mid || 0,
+        quiz: currentGrades.quiz || 0,
+        assignment: currentGrades.assignment || 0,
+        final: currentGrades.final || 0,
+        isDraft: true,  // IMPORTANT: This tells backend to save as draft
         academicYearId: selectedYearId,
-      });
-
+      };
+      
+      console.log("Saving draft with data:", draftData);
+      
+      const response = await saveGradeDraft(draftData);
+      
       console.log("Draft save response:", response);
-      toast.success(`Draft saved for ${student.fullName}`);
+      
+      toast.success(`📝 Draft saved for ${student.fullName}`);
       
       // Reload to ensure draft is persisted
-      await loadGrades();
+      setTimeout(() => {
+        loadGrades();
+      }, 500);
+      
       if (onSuccess) onSuccess();
     } catch (err) {
       console.error("Draft save error:", err);
@@ -313,6 +397,39 @@ export default function GradeEntryTable({ selectedClass, weights, onSuccess }) {
       setSaving(prev => ({ ...prev, [student._id]: false }));
     }
   };
+
+  // Add this function to check if all Semester 1 grades are submitted
+const checkAndUnlockSemester2 = async () => {
+  if (selectedSemester === 1) {
+    try {
+      const response = await checkSemester1Completion(
+        selectedClass.classInfo.courseId,
+        selectedYearId
+      );
+      
+      const { allCompleted, completedCount, totalStudents } = response.data;
+      
+      if (allCompleted && totalStudents > 0) {
+        toast.success(
+          `🎉 All ${totalStudents} students have submitted Semester 1 grades! Semester 2 is now unlocked.`,
+          { duration: 5000 }
+        );
+        
+        // Optionally auto-switch to semester 2
+        // setSelectedSemester(2);
+      }
+    } catch (error) {
+      console.error("Error checking semester 1 completion:", error);
+    }
+  }
+};
+
+// Call this after each submission
+useEffect(() => {
+  if (selectedSemester === 1) {
+    checkAndUnlockSemester2();
+  }
+}, [submitted, selectedSemester]);
 
   const filteredStudents = students.filter((s) => {
     const term = search.trim().toLowerCase();
@@ -324,6 +441,8 @@ export default function GradeEntryTable({ selectedClass, weights, onSuccess }) {
   });
 
   const semesterStatus = getSemesterStatus();
+  const submittedCount = Object.values(submitted).filter(v => v === true).length;
+  const draftCount = Object.values(grades).filter(g => g.isDraft === true && !submitted[g.studentId]).length;
 
   if (loading && !refreshing) {
     return (
@@ -367,7 +486,6 @@ export default function GradeEntryTable({ selectedClass, weights, onSuccess }) {
           </div>
           
           <div className="flex items-center gap-4">
-            {/* Refresh Button */}
             <button
               onClick={handleRefresh}
               disabled={refreshing}
@@ -381,7 +499,6 @@ export default function GradeEntryTable({ selectedClass, weights, onSuccess }) {
               <RefreshCw size={18} className={refreshing ? "animate-spin" : ""} />
             </button>
 
-            {/* Semester Selector */}
             <div>
               <label className="text-sm font-medium mr-2">Semester:</label>
               <select
@@ -398,14 +515,20 @@ export default function GradeEntryTable({ selectedClass, weights, onSuccess }) {
                 <option value="2">Semester 2</option>
               </select>
             </div>
-            
-            {/* Semester Status Badge */}
-            {!semesterStatus.isActive && (
-              <span className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300">
-                <AlertCircle size={14} />
-                Semester Inactive
-              </span>
-            )}
+          </div>
+        </div>
+        
+        {/* Progress Bar */}
+        <div className="mt-4">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm font-medium">Submission Progress</span>
+            <span className="text-sm">{submittedCount}/{students.length} Submitted</span>
+          </div>
+          <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: "var(--border)" }}>
+            <div 
+              className="h-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-500"
+              style={{ width: `${(submittedCount / students.length) * 100}%` }}
+            />
           </div>
         </div>
         
@@ -470,6 +593,7 @@ export default function GradeEntryTable({ selectedClass, weights, onSuccess }) {
                 Final ({weights.finalWeight})
               </th>
               <th className="p-3 border dark:border-gray-600 text-center text-sm font-semibold">Total</th>
+              <th className="p-3 border dark:border-gray-600 text-center text-sm font-semibold">Status</th>
               <th className="p-3 border dark:border-gray-600 text-center text-sm font-semibold">Actions</th>
             </tr>
           </thead>
@@ -477,7 +601,7 @@ export default function GradeEntryTable({ selectedClass, weights, onSuccess }) {
           <tbody>
             {filteredStudents.length === 0 ? (
               <tr>
-                <td colSpan={selectedSemester === 2 ? 11 : 9} 
+                <td colSpan={selectedSemester === 2 ? 12 : 10} 
                     className="text-center p-8 text-gray-500 dark:text-gray-400">
                   No students found
                 </td>
@@ -489,7 +613,7 @@ export default function GradeEntryTable({ selectedClass, weights, onSuccess }) {
                 const isSubmitted = submitted[student._id];
                 const isSaving = saving[student._id];
                 const isSubmitting = submitting[student._id];
-                const isDraft = g.isDraft;
+                const isDraft = g.isDraft && !isSubmitted;
 
                 return (
                   <tr
@@ -498,18 +622,13 @@ export default function GradeEntryTable({ selectedClass, weights, onSuccess }) {
                       idx % 2 === 0
                         ? "bg-white dark:bg-gray-800"
                         : "bg-gray-50 dark:bg-gray-700"
-                    } hover:bg-gray-100 dark:hover:bg-gray-600`}
+                    } hover:bg-gray-100 dark:hover:bg-gray-600 ${
+                      isSubmitted ? "opacity-75 bg-green-50 dark:bg-green-900/20" : ""
+                    }`}
                   >
                     <td className="p-3 border-b dark:border-gray-600 text-center">{idx + 1}</td>
                     <td className="p-3 border-b dark:border-gray-600">{student.username}</td>
-                    <td className="p-3 border-b dark:border-gray-600 font-medium">
-                      {student.fullName}
-                      {isDraft && !isSubmitted && (
-                        <span className="ml-2 text-xs px-1.5 py-0.5 rounded-full bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300">
-                          Draft
-                        </span>
-                      )}
-                    </td>
+                    <td className="p-3 border-b dark:border-gray-600 font-medium">{student.fullName}</td>
 
                     {/* Semester 2 Extra Data */}
                     {selectedSemester === 2 && (
@@ -544,9 +663,11 @@ export default function GradeEntryTable({ selectedClass, weights, onSuccess }) {
                           step="0.01"
                           value={g[field] || ""}
                           disabled={isSubmitted || !semesterStatus.isActive}
-                          className="w-20 text-center rounded-lg px-2 py-1.5 transition-all duration-200 focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                          className={`w-20 text-center rounded-lg px-2 py-1.5 transition-all duration-200 focus:ring-2 focus:ring-blue-500 disabled:opacity-50 ${
+                            isSubmitted ? "bg-gray-100 dark:bg-gray-700" : ""
+                          }`}
                           style={{ 
-                            background: "var(--bg)", 
+                            background: isSubmitted ? "var(--bg)" : "var(--bg)", 
                             color: "var(--text)", 
                             border: "1px solid var(--border)" 
                           }}
@@ -562,10 +683,28 @@ export default function GradeEntryTable({ selectedClass, weights, onSuccess }) {
                       <span className={`font-bold text-lg ${
                         total === "Invalid" 
                           ? "text-red-500" 
-                          : "text-blue-600"
+                          : isSubmitted ? "text-green-600" : "text-blue-600"
                       }`}>
                         {total === "Invalid" ? "Invalid" : total}
                       </span>
+                    </td>
+
+                    {/* Status Column */}
+                    <td className="p-3 border-b dark:border-gray-600 text-center">
+                      {isSubmitted ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300">
+                          <CheckCircle size={12} />
+                          Completed
+                        </span>
+                      ) : isDraft ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300">
+                          Draft
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                          Pending
+                        </span>
+                      )}
                     </td>
 
                     {/* Actions */}
@@ -596,9 +735,9 @@ export default function GradeEntryTable({ selectedClass, weights, onSuccess }) {
                           </button>
                         </div>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300">
-                          <CheckCircle size={14} />
-                          Submitted
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300">
+                          <Lock size={12} />
+                          Locked
                         </span>
                       )}
                     </td>
@@ -618,10 +757,10 @@ export default function GradeEntryTable({ selectedClass, weights, onSuccess }) {
               <strong>{filteredStudents.length}</strong> students shown
             </span>
             <span className="opacity-70">
-              <strong>{Object.keys(submitted).length}</strong> submitted
+              <strong>{submittedCount}</strong> submitted
             </span>
             <span className="opacity-70">
-              <strong>{Object.keys(grades).filter(id => grades[id]?.isDraft).length}</strong> drafts
+              <strong>{draftCount}</strong> drafts
             </span>
           </div>
           <div className="text-xs opacity-50">

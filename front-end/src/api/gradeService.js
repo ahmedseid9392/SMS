@@ -68,13 +68,62 @@ export const getSemesterTotals = async (studentId, courseId, academicYearId = nu
 }
 
 
+
+// Check if all students have submitted Semester 1
+export const checkSemester1Completion = async (courseId, academicYearId) => {
+  try {
+    const response = await api.get(`/grades/semester1-completion/${courseId}`, {
+      params: { academicYearId }
+    });
+    return response;
+  } catch (error) {
+    console.error("Error checking semester 1 completion:", error);
+    throw error;
+  }
+};
+
+// Get detailed submission status
+export const getSemester1SubmissionStatus = async (courseId, academicYearId) => {
+  try {
+    const response = await api.get(`/grades/semester1-status/${courseId}`, {
+      params: { academicYearId }
+    });
+    return response;
+  } catch (error) {
+    console.error("Error getting submission status:", error);
+    throw error;
+  }
+};
+
+// Manually unlock semester 2 (admin only)
+export const unlockSemester2 = async (courseId, academicYearId) => {
+  try {
+    const response = await api.post('/grades/unlock-semester2', {
+      courseId,
+      academicYearId
+    });
+    return response;
+  } catch (error) {
+    console.error("Error unlocking semester 2:", error);
+    throw error;
+  }
+};
+
+
 // ───────────────────────────────────────────────
 // Admin APIs
 // ───────────────────────────────────────────────
 
-export const getAllGrades = async () => {
-  const res = await api.get("/grades/all");
-  return res.data; // ✅ return data directly
+export const getAllGrades = async (academicYearId) => {
+  try {
+    const response = await api.get('/grades/all', {
+      params: { academicYearId }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching all grades:", error);
+    throw error;
+  }
 };
 
 export const adminComputeSemesterTotals = () =>
@@ -86,14 +135,71 @@ export const adminComputeRanking = () =>
 export const adminComputeTop3 = () =>
   api.post("/grades/top3");
 
-export const adminReleaseGrades = () =>
-  api.post("/grades/release");
+export const adminReleaseGrades = async (sectionKey, academicYearId) => {
+  try {
+    const response = await api.post('/grades/release', { 
+      sectionKey, 
+      academicYearId 
+    });
+    return response;
+  } catch (error) {
+    console.error("Error releasing grades:", error);
+    throw error;
+  }
+};
+
 
 export const adminUnlockGrade = (gradeId) =>
   api.patch(`/grades/unlock/${gradeId}`);
 
 
+// Get all academic years
+export const getAcademicYears = async () => {
+  try {
+    const response = await api.get('/academic-years');
+    return response;
+  } catch (error) {
+    console.error("Error fetching academic years:", error);
+    throw error;
+  }
+};
 
+// Get student's released results
+export const getStudentReleasedResults = async (academicYearId, semester) => {
+  try {
+    const response = await api.get('/student/results', {
+      params: { academicYearId, semester }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching student results:", error);
+    throw error;
+  }
+};
 
+// Get available academic years for student
+export const getStudentAcademicYears = async () => {
+  try {
+    const response = await api.get('/student/results/academic-years');
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching academic years:", error);
+    throw error;
+  }
+};
+
+// Request grade review
+export const requestGradeReview = async (gradeId, reason) => {
+  try {
+    const response = await api.post('/student/results/request-review', {
+      gradeId,
+      reason
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error requesting grade review:", error);
+    throw error;
+  }
+};
 
 

@@ -51,6 +51,35 @@ export default function GradeSubmission() {
     setSelectedClass(null);
   };
 
+  // Add this button to check submission status
+const handleCheckStatus = async () => {
+  if (!selectedClass) return;
+  
+  try {
+    const response = await getSemester1SubmissionStatus(
+      selectedClass.classInfo.courseId,
+      selectedYearId
+    );
+    
+    const { allCompleted, submittedCount, totalStudents, students } = response.data;
+    
+    if (allCompleted) {
+      toast.success(`✅ All ${totalStudents} students have submitted Semester 1 grades!`);
+    } else {
+      const pendingCount = totalStudents - submittedCount;
+      toast.error(`⚠️ ${pendingCount} student(s) have not submitted Semester 1 grades yet.`);
+      
+      // Show detailed list
+      const pendingStudents = students.filter(s => !s.isSubmitted);
+      console.log("Pending students:", pendingStudents);
+    }
+  } catch (error) {
+    console.error("Error checking status:", error);
+    toast.error("Failed to check submission status");
+  }
+};
+
+
   // Calculate statistics
   const totalStudents = classes.reduce((sum, cls) => sum + (cls.students?.length || 0), 0);
   const totalClasses = classes.length;
@@ -106,6 +135,12 @@ export default function GradeSubmission() {
           <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
           Refresh
         </button>
+        <button
+  onClick={handleCheckStatus}
+  className="px-4 py-2 rounded-xl bg-purple-600 text-white"
+>
+  Check Submission Status
+</button>
       </div>
 
       {/* Stats Cards (when no class selected) */}
