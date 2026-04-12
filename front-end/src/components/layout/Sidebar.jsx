@@ -87,9 +87,10 @@ const Sidebar = () => {
           height: "calc(100vh - 73px)", // Adjust height to account for navbar
         }}
       >
-        <div className="h-full px-5 py-6 overflow-y-auto">
-          {/* User Profile Summary */}
-          <div className="mb-8 pb-6 border-b" style={{ borderColor: "var(--border)" }}>
+        {/* Scrollable content area */}
+        <div className="h-full flex flex-col">
+          {/* User Profile Summary - Fixed at top */}
+          <div className="flex-shrink-0 px-5 pt-6 pb-4 border-b" style={{ borderColor: "var(--border)" }}>
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl">
                 {user?.name?.charAt(0) || user?.role?.charAt(0) || "U"}
@@ -101,50 +102,53 @@ const Sidebar = () => {
             </div>
           </div>
 
-          <nav className="space-y-2">
-            {links.map((link) => (
-              <NavLink
-                key={link.to}
-                to={link.to}
-                onClick={() => setIsOpen(false)}
-                className={({ isActive }) =>
-                  `group relative flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
-                    isActive
-                      ? "shadow-lg scale-[1.02]"
-                      : "hover:scale-[1.02] hover:shadow-md"
-                  }`
-                }
-                style={({ isActive }) => ({
-                  background: isActive ? "var(--primary)" : "var(--bg)",
-                  color: isActive ? "#fff" : "var(--text)",
-                  border: "1px solid var(--border)",
-                })}
-              >
-                <div 
-                  className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 ${
-                    !link.icon ? "" : "group-hover:scale-110"
-                  }`}
-                  style={{
-                    background: "var(--card)",
+          {/* Navigation Links - Scrollable area */}
+          <div className="flex-1 overflow-y-auto px-5 py-4 custom-scrollbar">
+            <nav className="space-y-2">
+              {links.map((link) => (
+                <NavLink
+                  key={link.to}
+                  to={link.to}
+                  onClick={() => setIsOpen(false)}
+                  className={({ isActive }) =>
+                    `group relative flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
+                      isActive
+                        ? "shadow-lg scale-[1.02]"
+                        : "hover:scale-[1.02] hover:shadow-md"
+                    }`
+                  }
+                  style={({ isActive }) => ({
+                    background: isActive ? "var(--primary)" : "var(--bg)",
+                    color: isActive ? "#fff" : "var(--text)",
                     border: "1px solid var(--border)",
-                  }}
+                  })}
                 >
-                  <link.icon 
-                    size={18} 
-                    className="transition-all duration-300"
-                    style={{ color: "currentColor" }}
-                  />
-                </div>
-                
-                <span className="font-medium text-sm">{link.label}</span>
-              </NavLink>
-            ))}
-          </nav>
+                  <div 
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 ${
+                      !link.icon ? "" : "group-hover:scale-110"
+                    }`}
+                    style={{
+                      background: "var(--card)",
+                      border: "1px solid var(--border)",
+                    }}
+                  >
+                    <link.icon 
+                      size={18} 
+                      className="transition-all duration-300"
+                      style={{ color: "currentColor" }}
+                    />
+                  </div>
+                  
+                  <span className="font-medium text-sm">{link.label}</span>
+                </NavLink>
+              ))}
+            </nav>
+          </div>
 
-          {/* Footer note */}
-          <div className="absolute bottom-6 left-5 right-5">
+          {/* Footer note - Fixed at bottom */}
+          <div className="flex-shrink-0 px-5 pb-6 pt-4 mt-auto border-t" style={{ borderColor: "var(--border)" }}>
             <div 
-              className="p-3 rounded-lg text-center text-xs opacity-50"
+              className="p-3 rounded-lg text-center text-xs opacity-50 transition-all duration-300 hover:opacity-100"
               style={{ border: "1px solid var(--border)" }}
             >
               <p>Green Valley School</p>
@@ -166,6 +170,24 @@ const Sidebar = () => {
           }}
         />
       )}
+
+      {/* Custom scrollbar styles - Add to your global CSS or use style tag */}
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: var(--border);
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: var(--primary);
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: var(--text);
+        }
+      `}</style>
     </>
   );
 };

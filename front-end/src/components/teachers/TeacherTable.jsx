@@ -21,7 +21,7 @@ export default function TeacherTable({ teachers, onDelete, onEdit, onView }) {
     }
   };
 
-  const handleEdit = (teacherId) => {
+ const handleEdit = (teacherId) => {
     if (onEdit) {
       onEdit(teacherId);
     } else {

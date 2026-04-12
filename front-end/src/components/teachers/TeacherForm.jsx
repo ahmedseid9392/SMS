@@ -8,16 +8,17 @@ import {
   updateTeacher,
   getTeacherById
 } from "../../api/teacherService";
-import { X, Save, UserPlus, Edit, User, BookOpen, Phone, Mail, MapPin, GraduationCap, Briefcase } from "lucide-react";
+import { X, Save, UserPlus, Edit, User, BookOpen, Phone, Mail, MapPin, GraduationCap } from "lucide-react";
 
 export default function TeacherForm() {
   const navigate = useNavigate();
-  const { id } = useParams(); // Get ID from URL
+  const { id } = useParams();
   const { user } = useAuth();
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [formData, setFormData] = useState(null); // Track if data is loaded
 
   const [form, setForm] = useState({
     fullName: "",
@@ -28,7 +29,7 @@ export default function TeacherForm() {
     address: "",
     specialization: "",
     gradeLevels: [],
-    stream: "None"
+    stream: ""
   });
 
   // Load teacher data when editing
@@ -38,8 +39,20 @@ export default function TeacherForm() {
     const loadTeacher = async () => {
       setLoading(true);
       try {
+        console.log("Loading teacher with ID:", id);
+        console.log("User token:", user.token);
+        
         const response = await getTeacherById(id, user.token);
-        const teacherData = response.data;
+        console.log("API Response:", response);
+        
+        // Handle different response structures
+        let teacherData = response.data || response;
+        
+        if (teacherData.data) {
+          teacherData = teacherData.data;
+        }
+        
+        console.log("Teacher data to populate:", teacherData);
         
         // Populate form with existing data
         setForm({
@@ -54,10 +67,13 @@ export default function TeacherForm() {
           stream: teacherData.stream || "None"
         });
         
+        setFormData(true);
         toast.success("Teacher data loaded");
+        
       } catch (error) {
         console.error("Failed to load teacher:", error);
-        toast.error("Failed to load teacher data");
+        console.error("Error details:", error.response?.data);
+        toast.error(error.response?.data?.message || "Failed to load teacher data");
         navigate("/admin/teachers");
       } finally {
         setLoading(false);
@@ -80,10 +96,6 @@ export default function TeacherForm() {
       toast.error("Please enter a valid email address");
       return false;
     }
-    if (form.gradeLevels.length === 0) {
-      toast.error("Please select at least one grade level");
-      return false;
-    }
     return true;
   };
 
@@ -95,7 +107,7 @@ export default function TeacherForm() {
     try {
       const teacherData = {
         fullName: form.fullName,
-        subjects: [form.subject], // Convert single subject to array
+        subjects: [form.subject],
         phone: form.phone,
         email: form.email,
         qualification: form.qualification,
@@ -116,8 +128,8 @@ export default function TeacherForm() {
       setConfirmModalOpen(false);
       navigate("/admin/teachers");
     } catch (err) {
-      toast.error(`Failed to ${id ? "update" : "create"} teacher`);
-      console.error(err);
+      console.error("Save error:", err);
+      toast.error(`Failed to ${id ? "update" : "create"} teacher: ${err.response?.data?.message || err.message}`);
     } finally {
       setSaving(false);
     }
@@ -129,7 +141,6 @@ export default function TeacherForm() {
     }
   };
 
-  // Handle grade level selection
   const handleGradeChange = (grade) => {
     setForm(prev => {
       const grades = prev.gradeLevels.includes(grade)
@@ -302,14 +313,14 @@ export default function TeacherForm() {
               {/* Grade Levels */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium mb-2">
-                  Grade Levels <span className="text-red-500">*</span>
+                  Grade Levels
                 </label>
                 <div className="flex gap-4 flex-wrap">
                   {[9, 10, 11, 12].map(grade => (
                     <label key={grade} className="flex items-center gap-2">
                       <input
                         type="checkbox"
-                        checked={form.gradeLevels.includes(grade)}
+                        checked={form.gradeLevels?.includes(grade) || false}
                         onChange={() => handleGradeChange(grade)}
                         className="w-4 h-4 text-blue-600 rounded"
                       />
@@ -319,27 +330,25 @@ export default function TeacherForm() {
                 </div>
               </div>
 
-              {/* Stream (shown only for grades 11-12) */}
-              {(form.gradeLevels.includes(11) || form.gradeLevels.includes(12)) && (
-                <div>
-                  <label className="block text-sm font-medium mb-2">Stream</label>
-                  <select
-                    className="w-full px-4 py-2 rounded-xl transition-all duration-300 focus:ring-2 focus:ring-blue-500"
-                    style={{ 
-                      background: "var(--bg)", 
-                      color: "var(--text)", 
-                      border: "1px solid var(--border)" 
-                    }}
-                    value={form.stream}
-                    onChange={(e) => setForm({ ...form, stream: e.target.value })}
-                  >
-                    <option value="None">Select Stream</option>
-                    <option value="Natural">Natural Science</option>
-                    <option value="Social">Social Science</option>
-                    <option value="Both">Both</option>
-                  </select>
-                </div>
-              )}
+              {/* Stream */}
+              <div>
+                <label className="block text-sm font-medium mb-2">Stream</label>
+                <select
+                  className="w-full px-4 py-2 rounded-xl transition-all duration-300 focus:ring-2 focus:ring-blue-500"
+                  style={{ 
+                    background: "var(--bg)", 
+                    color: "var(--text)", 
+                    border: "1px solid var(--border)" 
+                  }}
+                  value={form.stream}
+                  onChange={(e) => setForm({ ...form, stream: e.target.value })}
+                >
+                  <option value="None">None</option>
+                  <option value="Natural">Natural Science</option>
+                  <option value="Social">Social Science</option>
+                  <option value="Both">Both</option>
+                </select>
+              </div>
 
               {/* Address */}
               <div className="md:col-span-2">

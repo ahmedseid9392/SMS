@@ -177,6 +177,11 @@ export default function Teachers() {
     },
   ];
 
+  const handleEdit = (teacherId) => {
+    navigate(`/admin/teachers/edit/${teacherId}`);
+  };
+
+
   return (
     <div className="min-h-screen p-6 space-y-6 transition-all duration-500"
          style={{ background: "var(--bg)", color: "var(--text)" }}>
@@ -436,7 +441,7 @@ export default function Teachers() {
             <TeacherTable 
               teachers={teachers} 
               onDelete={handleDeleteClick}
-              onEdit={(id) => navigate(`/admin/teachers/edit/${id}`)}
+              onEdit={handleEdit}
             />
           )}
         </div>

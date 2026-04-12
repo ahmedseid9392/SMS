@@ -1,7 +1,179 @@
 import Grade from "../models/Grade.model.js";
 import GradingSetting from "../models/GradingSetting.model.js";
 import Student from "../models/Student.model.js";
+import AcademicYear from "../models/AcademicYear.model.js";
 
+// Get current active academic year
+export const getCurrentAcademicYear = async (req, res) => {
+  try {
+    let academicYear = await AcademicYear.findOne({ isActive: true, status: 'active' });
+    
+    if (!academicYear) {
+      // Create default academic year if none exists
+      const currentYear = new Date().getFullYear();
+      const ethiopianYear = currentYear - 8;
+      
+      academicYear = await AcademicYear.create({
+        name: `${ethiopianYear} EC - ${ethiopianYear + 1} EC`,
+        ethiopianYear: `${ethiopianYear} EC`,
+        gregorianYear: `${currentYear}/${currentYear + 1}`,
+        calendar: 'EC',
+        isActive: true,
+        status: 'active',
+        semesters: [
+          { semester: 1, name: "First Semester", isActive: true },
+          { semester: 2, name: "Second Semester", isActive: false }
+        ]
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: academicYear
+    });
+  } catch (error) {
+    console.error("Error fetching academic year:", error);
+    res.status(500).json({ message: "Failed to fetch academic year" });
+  }
+};
+
+// Get all academic years
+export const getAllAcademicYears = async (req, res) => {
+  try {
+    const academicYears = await AcademicYear.find().sort({ createdAt: -1 });
+    res.json({
+      success: true,
+      data: academicYears
+    });
+  } catch (error) {
+    console.error("Error fetching academic years:", error);
+    res.status(500).json({ message: "Failed to fetch academic years" });
+  }
+};
+
+// Create academic year
+export const createAcademicYear = async (req, res) => {
+  try {
+    const { 
+      name, ethiopianYear, gregorianYear, calendar,
+      startDateEC, endDateEC, startDateGC, endDateGC,
+      semesters, isActive
+    } = req.body;
+    
+    // Validate Ethiopian year format
+    const ethiopianYearRegex = /^\d{4}\s*EC$/i;
+    if (!ethiopianYearRegex.test(ethiopianYear)) {
+      return res.status(400).json({ 
+        message: "Invalid Ethiopian year format. Use: '2017 EC'" 
+      });
+    }
+    
+    const academicYear = new AcademicYear({
+      name,
+      ethiopianYear,
+      gregorianYear,
+      calendar,
+      startDateEC,
+      endDateEC,
+      startDateGC,
+      endDateGC,
+      semesters,
+      isActive: isActive || false,
+      status: isActive ? 'active' : 'upcoming'
+    });
+    
+    await academicYear.save();
+    
+    res.status(201).json({
+      success: true,
+      message: "Academic year created successfully",
+      data: academicYear
+    });
+  } catch (error) {
+    console.error("Error creating academic year:", error);
+    res.status(500).json({ message: "Failed to create academic year" });
+  }
+};
+
+// Set active academic year
+export const setActiveAcademicYear = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Deactivate all academic years
+    await AcademicYear.updateMany({}, { isActive: false, status: 'completed' });
+    
+    // Activate selected academic year
+    const academicYear = await AcademicYear.findByIdAndUpdate(
+      id,
+      { isActive: true, status: 'active' },
+      { new: true }
+    );
+    
+    if (!academicYear) {
+      return res.status(404).json({ message: "Academic year not found" });
+    }
+    
+    res.json({
+      success: true,
+      message: "Academic year activated",
+      data: academicYear
+    });
+  } catch (error) {
+    console.error("Error setting active academic year:", error);
+    res.status(500).json({ message: "Failed to set active academic year" });
+  }
+};
+
+// Update academic year
+export const updateAcademicYear = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+    
+    const academicYear = await AcademicYear.findByIdAndUpdate(id, updates, { new: true });
+    
+    if (!academicYear) {
+      return res.status(404).json({ message: "Academic year not found" });
+    }
+    
+    res.json({
+      success: true,
+      message: "Academic year updated successfully",
+      data: academicYear
+    });
+  } catch (error) {
+    console.error("Error updating academic year:", error);
+    res.status(500).json({ message: "Failed to update academic year" });
+  }
+};
+
+// Delete academic year
+export const deleteAcademicYear = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const academicYear = await AcademicYear.findById(id);
+    if (!academicYear) {
+      return res.status(404).json({ message: "Academic year not found" });
+    }
+    
+    if (academicYear.isActive) {
+      return res.status(400).json({ message: "Cannot delete active academic year" });
+    }
+    
+    await academicYear.deleteOne();
+    
+    res.json({
+      success: true,
+      message: "Academic year deleted successfully"
+    });
+  } catch (error) {
+    console.error("Error deleting academic year:", error);
+    res.status(500).json({ message: "Failed to delete academic year" });
+  }
+};
+// Updated submitGrade with academic year support
 export const submitGrade = async (req, res) => {
   try {
     const {
@@ -12,10 +184,33 @@ export const submitGrade = async (req, res) => {
       quiz,
       assignment,
       final,
-      isDraft
+      isDraft,
+      academicYearId
     } = req.body;
 
     const teacherId = req.user.id;
+
+    // Get active academic year
+    let academicYear;
+    if (academicYearId) {
+      academicYear = await AcademicYear.findById(academicYearId);
+    } else {
+      academicYear = await AcademicYear.findOne({ isActive: true, status: 'active' });
+    }
+    
+    if (!academicYear) {
+      return res.status(400).json({ 
+        message: "No active academic year found. Please contact administrator." 
+      });
+    }
+    
+    // Check if semester is active
+    const semesterData = academicYear.semesters.find(s => s.semester === semester);
+    if (!semesterData || !semesterData.isActive) {
+      return res.status(400).json({ 
+        message: `Semester ${semester} is not active for the current academic year (${academicYear.name})` 
+      });
+    }
 
     const weights = await GradingSetting.findOne();
     if (!weights) return res.status(400).json({ message: "Grading settings missing" });
@@ -38,37 +233,68 @@ export const submitGrade = async (req, res) => {
       return res.status(400).json({ message: "Score exceeds maximum allowed" });
     }
 
-    const total =
-      sanitized.mid + sanitized.quiz + sanitized.assignment + sanitized.final;
+    const total = sanitized.mid + sanitized.quiz + sanitized.assignment + sanitized.final;
 
-    const whole = sem1 => ({
-      ...sem1,
-      mid: sanitized.mid,
-      quiz: sanitized.quiz,
-      assignment: sanitized.assignment,
-      final: sanitized.final,
-      total: Number(total.toFixed(2)),
-      locked: !isDraft
+    // Find or create grade record
+    let grade = await Grade.findOne({
+      student: studentId,
+      course: courseId,
+      teacher: teacherId,
+      "academicYear.year": academicYear.ethiopianYear
     });
 
-    // update correct semester block
-    const update = semester === 1
-      ? { sem1: whole({}) }
-      : { sem2: whole({}) };
+    if (!grade) {
+      grade = new Grade({
+        student: studentId,
+        teacher: teacherId,
+        course: courseId,
+        academicYear: {
+          year: academicYear.ethiopianYear,
+          ethiopianYear: academicYear.ethiopianYear,
+          gregorianYear: academicYear.gregorianYear,
+          isActive: academicYear.isActive
+        }
+      });
+    }
 
-    const grade = await Grade.findOneAndUpdate(
-      { student: studentId, course: courseId, teacher: teacherId },
-      update,
-      { new: true, upsert: true }
-    );
+    if (isDraft) {
+      // Save as draft
+      grade.draft = {
+        semester,
+        mid: sanitized.mid,
+        quiz: sanitized.quiz,
+        assignment: sanitized.assignment,
+        final: sanitized.final,
+        total: Number(total.toFixed(2)),
+        savedAt: new Date()
+      };
+    } else {
+      // Submit final grade
+      const semesterField = semester === 1 ? 'sem1' : 'sem2';
+      grade[semesterField] = {
+        mid: sanitized.mid,
+        quiz: sanitized.quiz,
+        assignment: sanitized.assignment,
+        final: sanitized.final,
+        total: Number(total.toFixed(2)),
+        locked: true
+      };
+    }
 
-    res.json({ success: true, grade });
+    await grade.save();
+
+    res.json({ 
+      success: true, 
+      message: isDraft ? "Draft saved successfully" : "Grade submitted successfully",
+      grade 
+    });
 
   } catch (err) {
     console.error("Submit Error:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
+
 
 //  admin calculate grade
 export const adminComputeSemesterTotals = async (req, res) => {
@@ -422,18 +648,35 @@ export const unlockGrade = async (req, res) => {
 
 
 
+// Updated getGradesForClass with academic year filter
 export const getGradesForClass = async (req, res) => {
   try {
     const { classId } = req.params;
+    const { academicYearId } = req.query;
 
     if (!classId) {
       return res.status(400).json({ message: "Class ID is required" });
     }
 
-    const grades = await Grade.find({
+    let query = {
       teacher: req.user.id,
       course: classId,
-    }).populate("student");
+    };
+
+    if (academicYearId) {
+      const academicYear = await AcademicYear.findById(academicYearId);
+      if (academicYear) {
+        query["academicYear.year"] = academicYear.ethiopianYear;
+      }
+    } else {
+      // Get active academic year
+      const activeYear = await AcademicYear.findOne({ isActive: true });
+      if (activeYear) {
+        query["academicYear.year"] = activeYear.ethiopianYear;
+      }
+    }
+
+    const grades = await Grade.find(query).populate("student");
 
     res.status(200).json({ success: true, grades });
   } catch (err) {
@@ -441,22 +684,61 @@ export const getGradesForClass = async (req, res) => {
     res.status(500).json({ message: "Server Error" });
   }
 };
-
+// Updated getStudentSemesterTotals with academic year
 export const getStudentSemesterTotals = async (req, res) => {
   try {
     const { studentId, courseId } = req.params;
+    const { academicYearId } = req.query;
 
-    const grade = await Grade.findOne({ student: studentId, course: courseId });
+    let query = { student: studentId, course: courseId };
+    
+    if (academicYearId) {
+      const academicYear = await AcademicYear.findById(academicYearId);
+      if (academicYear) {
+        query["academicYear.year"] = academicYear.ethiopianYear;
+      }
+    }
+
+    const grade = await Grade.findOne(query);
 
     res.json({
       success: true,
-      sem1: grade?.scores?.sem1?.total || 0,
-      sem2: grade?.scores?.sem2?.total || 0,
-      average: grade?.average || null
+      sem1: grade?.sem1?.total || 0,
+      sem2: grade?.sem2?.total || 0,
+      average: grade ? ((grade.sem1?.total + grade.sem2?.total) / 2) : null
     });
 
   } catch (err) {
     console.error("Semester total error:", err);
     res.status(500).json({ message: "Server Error" });
+  }
+};
+
+// Update semester activation
+export const updateSemesterStatus = async (req, res) => {
+  try {
+    const { academicYearId, semester, isActive } = req.body;
+    
+    const academicYear = await AcademicYear.findById(academicYearId);
+    if (!academicYear) {
+      return res.status(404).json({ message: "Academic year not found" });
+    }
+    
+    const semesterIndex = academicYear.semesters.findIndex(s => s.semester === semester);
+    if (semesterIndex === -1) {
+      return res.status(404).json({ message: "Semester not found" });
+    }
+    
+    academicYear.semesters[semesterIndex].isActive = isActive;
+    await academicYear.save();
+    
+    res.json({
+      success: true,
+      message: `Semester ${semester} ${isActive ? 'activated' : 'deactivated'} successfully`,
+      data: academicYear
+    });
+  } catch (error) {
+    console.error("Error updating semester status:", error);
+    res.status(500).json({ message: "Failed to update semester status" });
   }
 };
