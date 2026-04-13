@@ -8,10 +8,17 @@ export const getTeachers = (token, params = {}) =>
   });
 
 // GET by ID
-export const getTeacherById = (id, token) =>
-  api.get(`/teachers/${id}`, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
+export const getTeacherById = async (id, token) => {
+  try {
+    const response = await api.get(`/teachers/${id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return response;
+  } catch (error) {
+    console.error("Get teacher by ID error:", error);
+    throw error;
+  }
+};
 
 // CREATE teacher
 export const createTeacher = (data, token) =>

@@ -20,21 +20,23 @@ const Layout = ({ children }) => {
         color: "var(--text)",
       }}
     >
-      {/* NAVBAR */}
-      <Navbar />
+      {/* NAVBAR - fixed at top */}
+      <div className="sticky top-0 z-40">
+        <Navbar />
+      </div>
 
-      <div className="flex flex-1">
-        
-        {/* SIDEBAR */}
-        <Sidebar />
+      <div className="flex flex-1 relative">
+        {/* SIDEBAR - starts below navbar with proper positioning */}
+        <div className="relative z-30">
+          <Sidebar />
+        </div>
 
         {/* MAIN CONTENT */}
         <main
-          className="flex-1 p-6 overflow-y-auto transition-all duration-500"
+          className="flex-1 p-6 overflow-y-auto transition-all duration-500 min-h-[calc(100vh-73px)]"
           style={{
-            background: "var(--card)",
+            background: "var(--bg)",
             color: "var(--text)",
-            borderLeft: "1px solid var(--border)"
           }}
         >
           {children}
