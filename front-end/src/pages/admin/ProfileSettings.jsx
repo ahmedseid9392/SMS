@@ -113,7 +113,7 @@ const ProfileSettings = () => {
     
     setSaving(true);
     try {
-      const response = await api.put('/profile', profileForm);
+      const response = await api.put('/auth/admin/profile', profileForm);
       if (response.data.success) {
         // Update user context with new data
         updateUser(response.data.user);
@@ -150,7 +150,7 @@ const ProfileSettings = () => {
     
     setSaving(true);
     try {
-      const response = await api.post('/change-password', {
+      const response = await api.post('/auth/admin/change-password', {
         currentPassword: passwordForm.currentPassword,
         newPassword: passwordForm.newPassword
       });

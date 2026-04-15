@@ -2,10 +2,12 @@
 import mongoose from 'mongoose';
 import Notification from '../models/Notification.model.js';
 import User from '../models/User.model.js';
+import dotenv from 'dotenv';
 
+dotenv.config();
 async function createSampleNotifications() {
   try {
-    await mongoose.connect('mongodb://localhost:27017/school_management');
+    await mongoose.connect(process.env.MONGO_URI);
     
     // Get all users
     const users = await User.find();

@@ -9,7 +9,7 @@ import gradeRoutes from "./routes/Grade.routes.js"
 import gradingSettingRoutes from "./routes/gradingSetting.routes.js"
 import AcademicYearRoute from "./routes/academicYear.routes.js";
 import notificationRoutes from './routes/notificationRoutes.js';
-
+import paymentRoutes from './routes/paymentRoutes.js';
 
 const app = express();
 
@@ -28,7 +28,7 @@ app.use("/api", gradeRoutes);
 app.use("/api/grading-setting", gradingSettingRoutes);
 app.use("/api/academic-years",AcademicYearRoute);
 app.use('/api', notificationRoutes); 
-
+app.use('/api', paymentRoutes);
 // TEST ROUTE (IMPORTANT)
 app.get("/api/test", (req, res) => {
   res.json({ message: "API is working" });

@@ -14,7 +14,8 @@ const Navbar = () => {
    const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   
-  const avatar = user?.profilePic || defaultAvatar;
+  const avatar = user?.
+profilePicture || defaultAvatar;
 
   const handleLogout = () => {
     logout();
