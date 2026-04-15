@@ -6,38 +6,45 @@ const ScoreSchema = new mongoose.Schema({
   assignment: { type: Number, default: null },
   final: { type: Number, default: null },
   total: { type: Number, default: null },
-  locked: { type: Boolean, default: false }
+  locked: { type: Boolean, default: false },
+  submittedAt: Date,
+  submittedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" }
 });
 
-// Academic year reference schema
-const AcademicYearRefSchema = new mongoose.Schema({
-  year: { type: String, required: true },
-  ethiopianYear: { type: String, required: true },
-  gregorianYear: { type: String, required: true },
-  isActive: { type: Boolean, default: false }
+const DraftSchema = new mongoose.Schema({
+  semester: { type: Number },
+  mid: { type: Number, default: 0 },
+  quiz: { type: Number, default: 0 },
+  assignment: { type: Number, default: 0 },
+  final: { type: Number, default: 0 },
+  total: { type: Number, default: 0 },
+  savedAt: Date
+});
+
+const AcademicYearInfoSchema = new mongoose.Schema({
+  _id: { type: mongoose.Schema.Types.ObjectId },
+  name: { type: String },
+  year: { type: String },
+  ethiopianYear: { type: String },
+  gregorianYear: { type: String }
 }, { _id: false });
 
 const GradeSchema = new mongoose.Schema({
   student: { type: mongoose.Schema.Types.ObjectId, ref: "Student", required: true },
   teacher: { type: mongoose.Schema.Types.ObjectId, ref: "Teacher", required: true },
   course: { type: mongoose.Schema.Types.ObjectId, ref: "Course", required: true },
-  
-  // Academic Year Reference
-  academicYear: AcademicYearRefSchema,
-  
-  // Draft grades (before submission)
-  draft: {
-    semester: { type: Number, enum: [1, 2] },
-    mid: { type: Number, default: null },
-    quiz: { type: Number, default: null },
-    assignment: { type: Number, default: null },
-    final: { type: Number, default: null },
-    total: { type: Number, default: null },
-    savedAt: { type: Date, default: Date.now }
+
+  // Make academicYear completely optional - remove required
+  academicYear: { 
+    type: AcademicYearInfoSchema,
+    default: null,
+    required: false 
   },
 
   sem1: { type: ScoreSchema, default: () => ({}) },
   sem2: { type: ScoreSchema, default: () => ({}) },
+  
+  draft: { type: DraftSchema, default: null },
 
   sumSem1: { type: Number, default: 0 },
   sumSem2: { type: Number, default: 0 },
@@ -52,8 +59,5 @@ const GradeSchema = new mongoose.Schema({
 
   isReleased: { type: Boolean, default: false }
 }, { timestamps: true });
-
-// Compound index for unique grade per student per course per academic year
-GradeSchema.index({ student: 1, course: 1, "academicYear.year": 1 }, { unique: true });
 
 export default mongoose.model("Grade", GradeSchema);

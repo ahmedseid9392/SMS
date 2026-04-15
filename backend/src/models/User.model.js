@@ -34,6 +34,15 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true, // force password change
     },
+     notificationSettings: {
+    emailNotifications: { type: Boolean, default: true },
+    pushNotifications: { type: Boolean, default: true },
+    gradeAlerts: { type: Boolean, default: true },
+    attendanceAlerts: { type: Boolean, default: true },
+    assignmentAlerts: { type: Boolean, default: true },
+    systemUpdates: { type: Boolean, default: false }
+  },
+  profilePicture: { type: String, default: "" }
   },
   { timestamps: true }
 );

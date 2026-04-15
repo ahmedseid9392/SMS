@@ -28,8 +28,14 @@ import Notifications from "../pages/student/Notifications";
 import AttendanceView from "../pages/student/Attendance";
 
 import ParentDashboard from "../pages/parent/Dashboard";
+import ProfileSettings from "../pages/admin/ProfileSettings";
 import Profile from "../pages/Profile";
 
+import StudentPayments from "../pages/student/StudentPayments";
+import ParentPayments from "../pages/parent/ParentPayments";
+import AdminPayments from "../pages/admin/AdminPayments";
+import PaymentSuccess from "../pages/PaymentSuccess";
+import PaymentFailed from "../pages/PaymentFailed";
 const AppRoutes = () => (
   <BrowserRouter>
     <Routes>
@@ -46,6 +52,7 @@ const AppRoutes = () => (
           </ProtectedRoute>
         }
       />
+      
      <Route
   path="/admin/students"
   element={
@@ -157,7 +164,8 @@ const AppRoutes = () => (
   }
 />
 
-      
+  <Route path="/admin/profile-settings" element={<ProfileSettings />} />
+  <Route path="/profile" element={<ProfileSettings />} />    
 
       {/* Teacher */}
       <Route
@@ -254,6 +262,11 @@ const AppRoutes = () => (
           </ProtectedRoute>
         }
       />
+      <Route path="/student/payments" element={<StudentPayments />} />
+    <Route path="/parent/payments" element={<ParentPayments />}/>
+    <Route path="/admin/payments" element={<AdminPayments />} />
+    <Route path="/payment/success" element={<PaymentSuccess />} />
+<Route path="/payment/failed" element={<PaymentFailed />} />
     </Routes>
   </BrowserRouter>
 );
