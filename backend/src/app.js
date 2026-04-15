@@ -8,7 +8,7 @@ import teacherAssignmentRoutes from "./routes/TeacherAssigment.route.js";
 import gradeRoutes from "./routes/Grade.routes.js"
 import gradingSettingRoutes from "./routes/gradingSetting.routes.js"
 import AcademicYearRoute from "./routes/academicYear.routes.js";
-
+import notificationRoutes from './routes/notificationRoutes.js';
 
 
 const app = express();
@@ -24,9 +24,10 @@ app.use("/api/students", studentRouter);
 app.use("/api/teachers", teacherRoutes);
 app.use("/api/courses", courseRoutes);
 app.use("/api/assignments", teacherAssignmentRoutes);
-app.use("/api/grades", gradeRoutes);
+app.use("/api", gradeRoutes);
 app.use("/api/grading-setting", gradingSettingRoutes);
 app.use("/api/academic-years",AcademicYearRoute);
+app.use('/api', notificationRoutes); 
 
 // TEST ROUTE (IMPORTANT)
 app.get("/api/test", (req, res) => {

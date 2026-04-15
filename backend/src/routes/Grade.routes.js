@@ -1,60 +1,51 @@
-import express from "express";
-import protect from "../middleware/auth.middleware.js";
+import express from 'express';
 import {
   submitGrade,
+  saveDraft,
   getTeacherGrades,
   getAllGrades,
   getParentGrades,
   getStudentGrades,
-  getGradesForClass,
-  getStudentSemesterTotals,
-
   adminComputeSemesterTotals,
   adminComputeRanking,
   adminComputeTop3,
-   adminReleaseGrades,
-
-   checkSemester1Completion,
-   getSemester1SubmissionStatus,
-   unlockSemester2,
-
-   getStudentReleasedResults,
-    getStudentAcademicYears,
-    requestGradeReview
-
-} from "../controllers/Grade.controller.js";
+  adminReleaseGrades,
+  unlockGrade,
+  getGradesForClass,
+  getStudentSemesterTotals,
+  getStudentReleasedResults,
+  getStudentAcademicYears,
+  requestGradeReview,
+  checkSemester1Completion
+} from '../controllers/Grade.controller.js';
+import protect from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
-router.post("/submit", protect, submitGrade);
-router.post("/draft", protect, submitGrade);
-router.get("/teacher", protect, getTeacherGrades);
-router.get("/all", protect, getAllGrades);
-router.get("/parent", protect, getParentGrades);
-router.get("/student", protect, getStudentGrades);
-router.get("/class/:classId", protect, getGradesForClass);
-router.get(
-  "/semester-totals/:studentId/:courseId",protect,getStudentSemesterTotals);
+// Teacher routes
+router.post('/grades/submit',protect, submitGrade);
+router.post('/grades/draft',protect, saveDraft);
+router.get('/grades/teacher',protect, getTeacherGrades);
+router.get('/grades/class/:classId',protect, getGradesForClass);
+router.get('/grades/semester-totals/:studentId/:courseId', protect, getStudentSemesterTotals);
 
-  //admin route
-router.post("/compute-totals", protect, adminComputeSemesterTotals);
-router.post("/compute-ranking", protect, adminComputeRanking);
-router.post("/top3", protect, adminComputeTop3);
-router.post("/release", protect, adminReleaseGrades);
-//router.patch("/unlock/:id", adminUnlockGrade);
-// Check if all students have submitted Semester 1
-router.get('/semester1-completion/:courseId', checkSemester1Completion);
-
-// Get detailed submission status
-router.get('/semester1-status/:courseId', getSemester1SubmissionStatus);
-
-// Unlock Semester 2 (auto-check)
-router.post('/unlock-semester2', unlockSemester2);
-
+// Admin routes
+router.get('/grades/all', protect, getAllGrades);
+router.post('/grades/compute-totals', protect, adminComputeSemesterTotals);
+router.post('/grades/compute-ranking', protect, adminComputeRanking);
+router.post('/grades/compute-top3', protect, adminComputeTop3);
+router.post('/grades/release', protect, adminReleaseGrades);
+router.put('/grades/unlock/:id', protect, unlockGrade);
+router.get('/grades/semester1-completion/:courseId',protect, checkSemester1Completion);
+// Student routes - IMPORTANT: These need to be before the /grades/:id route
 router.get('/student/results', protect, getStudentReleasedResults);
 router.get('/student/results/academic-years', protect, getStudentAcademicYears);
 router.post('/student/results/request-review', protect, requestGradeReview);
 
+// Parent routes
+router.get('/parent/grades', protect, getParentGrades);
 
+// Student grade view
+router.get('/student/grades', protect, getStudentGrades);
 
 export default router;

@@ -28,8 +28,8 @@ import Notifications from "../pages/student/Notifications";
 import AttendanceView from "../pages/student/Attendance";
 
 import ParentDashboard from "../pages/parent/Dashboard";
+import ProfileSettings from "../pages/admin/ProfileSettings";
 import Profile from "../pages/Profile";
-
 const AppRoutes = () => (
   <BrowserRouter>
     <Routes>
@@ -46,6 +46,7 @@ const AppRoutes = () => (
           </ProtectedRoute>
         }
       />
+      
      <Route
   path="/admin/students"
   element={
@@ -157,7 +158,8 @@ const AppRoutes = () => (
   }
 />
 
-      
+  <Route path="/admin/profile-settings" element={<ProfileSettings />} />
+  <Route path="/profile" element={<ProfileSettings />} />    
 
       {/* Teacher */}
       <Route

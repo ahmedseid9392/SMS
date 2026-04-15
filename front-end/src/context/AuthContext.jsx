@@ -100,6 +100,14 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const updateUser = (updatedUserData) => {
+    const updatedUser = { ...user, ...updatedUserData };
+    setUser(updatedUser);
+    localStorage.setItem("user", JSON.stringify(updatedUser));
+  };
+
+ 
+
   // LOGOUT
   const logout = () => {
     setUser(null);

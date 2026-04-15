@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Grade from "../models/Grade.model.js";
 import GradingSetting from "../models/GradingSetting.model.js";
 import Student from "../models/Student.model.js";
@@ -173,7 +174,7 @@ export const deleteAcademicYear = async (req, res) => {
     res.status(500).json({ message: "Failed to delete academic year" });
   }
 };
-// Updated submitGrade with academic year support
+// Submit final grade (lock the grade)
 export const submitGrade = async (req, res) => {
   try {
     const {
@@ -187,145 +188,128 @@ export const submitGrade = async (req, res) => {
       isDraft,
       academicYearId
     } = req.body;
-
+    
     const teacherId = req.user.id;
-// Get academic year info
-    const AcademicYear = mongoose.model('AcademicYear');
-    const academicYear = await AcademicYear.findById(academicYearId);
-    const weights = await GradingSetting.findOne();
-    if (!weights) return res.status(400).json({ message: "Grading settings missing" });
-
-    const sanitized = {
-      mid: Number(mid) || 0,
-      quiz: Number(quiz) || 0,
-      assignment: Number(assignment) || 0,
-      final: Number(final) || 0
-    };
-
-    // Validate score limits
-    const invalid =
-      sanitized.mid > weights.midWeight ||
-      sanitized.quiz > weights.quizWeight ||
-      sanitized.assignment > weights.assignmentWeight ||
-      sanitized.final > weights.finalWeight;
-
-    if (invalid) {
-      return res.status(400).json({ message: "Score exceeds maximum allowed" });
+    
+    console.log("Submit Grade Request:", { studentId, courseId, semester, academicYearId });
+    
+    // Validate required fields
+    if (!studentId || !courseId || !semester) {
+      return res.status(400).json({ message: "Missing required fields" });
     }
-
-    const total = sanitized.mid + sanitized.quiz + sanitized.assignment + sanitized.final;
-
-    // Find or create grade record
+    
+    // Validate scores are present (for final submission)
+    if (!isDraft && (mid === undefined || quiz === undefined || assignment === undefined || final === undefined)) {
+      return res.status(400).json({ message: "All score fields are required for submission" });
+    }
+    
+    // Get weights for validation
+    const weights = await GradingSetting.findOne();
+    if (!weights) {
+      return res.status(400).json({ message: "Grading settings not found" });
+    }
+    
+    // Calculate total
+    const midNum = Number(mid) || 0;
+    const quizNum = Number(quiz) || 0;
+    const assignmentNum = Number(assignment) || 0;
+    const finalNum = Number(final) || 0;
+    const total = midNum + quizNum + assignmentNum + finalNum;
+    
+    // Find existing grade record
     let grade = await Grade.findOne({ 
       student: studentId, 
       course: courseId,
       teacher: teacherId
     });
-
+    
     if (!grade) {
+      // Create new grade WITHOUT academic year first
       grade = new Grade({
         student: studentId,
         teacher: teacherId,
         course: courseId,
-        academicYear: {
-          _id: academicYear._id,
-          name: academicYear.name,
-          year: academicYear.ethiopianYear,
-          ethiopianYear: academicYear.ethiopianYear,
-          gregorianYear: academicYear.gregorianYear
-        }
+        isReleased: false
       });
+      
+      // Only add academic year if ID is provided and valid
+      if (academicYearId && academicYearId !== 'default') {
+        try {
+          const AcademicYear = mongoose.model('AcademicYear');
+          const academicYear = await AcademicYear.findById(academicYearId);
+          if (academicYear) {
+            grade.academicYear = {
+              _id: academicYear._id,
+              name: academicYear.name,
+              year: academicYear.ethiopianYear || academicYear.name,
+              ethiopianYear: academicYear.ethiopianYear,
+              gregorianYear: academicYear.gregorianYear
+            };
+          }
+        } catch (err) {
+          console.log("Could not fetch academic year:", err.message);
+          // Don't set academic year - continue without it
+        }
+      }
     }
-
-    const semesterField = semester === 1 ? 'sem1' : 'sem2';
-
+    
     if (isDraft) {
-      // Save as draft (not locked)
+      // Save as draft
       grade.draft = {
-        semester,
-        mid: sanitized.mid,
-        quiz: sanitized.quiz,
-        assignment: sanitized.assignment,
-        final: sanitized.final,
-        total: Number(total.toFixed(2)),
+        semester: semester,
+        mid: midNum,
+        quiz: quizNum,
+        assignment: assignmentNum,
+        final: finalNum,
+        total: total,
         savedAt: new Date()
       };
       
       await grade.save();
       
-      return res.json({ 
+      console.log("Draft saved successfully");
+      return res.status(200).json({ 
         success: true, 
         message: "Draft saved successfully",
-        grade,
-        isDraft: true 
+        grade: grade
       });
+      
     } else {
-      // Submit final grade - THIS SHOULD LOCK THE GRADE
+      // Submit final grade
+      const semesterField = semester === 1 ? 'sem1' : 'sem2';
       grade[semesterField] = {
-        mid: sanitized.mid,
-        quiz: sanitized.quiz,
-        assignment: sanitized.assignment,
-        final: sanitized.final,
-        total: Number(total.toFixed(2)),
-        locked: true,  // CRITICAL: Lock the grade
+        mid: midNum,
+        quiz: quizNum,
+        assignment: assignmentNum,
+        final: finalNum,
+        total: total,
+        locked: true,
         submittedAt: new Date(),
         submittedBy: teacherId
       };
       
       // Clear any draft for this semester
       if (grade.draft && grade.draft.semester === semester) {
-        grade.draft = undefined;
+        grade.draft = null;
       }
-
-      if (!isDraft && semester === 1) {
-  // Check if all Semester 1 grades are now submitted
-  const allGrades = await Grade.find({ 
-    course: courseId,
-    "academicYear._id": academicYearId 
-  });
-  
-  const assignment = await TeacherAssignment.findOne({ 
-    course: courseId,
-    academicYear: academicYearId 
-  }).populate('students');
-  
-  const allStudentIds = assignment.students.map(s => s._id.toString());
-  const submittedStudentIds = allGrades
-    .filter(g => g.sem1?.locked === true)
-    .map(g => g.student.toString());
-  
-  const allCompleted = allStudentIds.length > 0 && 
-    allStudentIds.every(id => submittedStudentIds.includes(id));
-  
-  if (allCompleted) {
-    // Update academic year to unlock semester 2
-    await AcademicYear.updateOne(
-      { 
-        "_id": academicYearId,
-        "semesters.semester": 2 
-      },
-      { 
-        "$set": { "semesters.$.isActive": true } 
-      }
-    );
-    
-    console.log(`✅ Semester 2 unlocked for course ${courseId}`);
-  }
-}
       
       await grade.save();
       
-      return res.json({ 
+      console.log("Grade submitted successfully");
+      return res.status(200).json({ 
         success: true, 
         message: "Grade submitted successfully",
-        grade,
-        isDraft: false,
-        locked: true
+        grade: grade
       });
     }
+    
   } catch (err) {
-    console.error("Submit Error:", err);
-    res.status(500).json({ message: "Server error" });
+    console.error("Submit Grade Error:", err);
+    res.status(500).json({ 
+      success: false, 
+      message: "Server error while submitting grade", 
+      error: err.message 
+    });
   }
 };
 //  admin calculate grade
@@ -641,35 +625,103 @@ export const getStudentGrades = async (req, res) => {
 };
 
 
+/// Save draft grade
 export const saveDraft = async (req, res) => {
   try {
-    const { studentId, courseId, semester, mid, quiz, assignment, final } = req.body;
+    const {
+      studentId,
+      courseId,
+      semester,
+      mid,
+      quiz,
+      assignment,
+      final,
+      isDraft,
+      academicYearId
+    } = req.body;
+    
     const teacherId = req.user.id;
-
-    const toNumber = (v) => (v !== null && v !== undefined ? Number(v) : 0);
-
-    const total =
-      toNumber(mid) +
-      toNumber(quiz) +
-      toNumber(assignment) +
-      toNumber(final);
-
-    const updated = await Grade.findOneAndUpdate(
-      { student: studentId, course: courseId, teacher: teacherId, semester },
-      {
-        scores: { mid, quiz, assignment, final, total },
-        status: null,
-        locked: false,  // ✔ DRAFT
-      },
-      { upsert: true, new: true }
-    );
-
-    res.status(200).json({ message: "Draft Saved", grade: updated });
+    
+    console.log("Save Draft Request:", { studentId, courseId, semester, academicYearId });
+    
+    // Validate required fields
+    if (!studentId || !courseId || !semester) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+    
+    // Calculate total
+    const midNum = Number(mid) || 0;
+    const quizNum = Number(quiz) || 0;
+    const assignmentNum = Number(assignment) || 0;
+    const finalNum = Number(final) || 0;
+    const total = midNum + quizNum + assignmentNum + finalNum;
+    
+    // Find existing grade record
+    let grade = await Grade.findOne({ 
+      student: studentId, 
+      course: courseId,
+      teacher: teacherId
+    });
+    
+    if (!grade) {
+      // Create new grade WITHOUT academic year first
+      grade = new Grade({
+        student: studentId,
+        teacher: teacherId,
+        course: courseId,
+        isReleased: false
+      });
+      
+      // Only add academic year if ID is provided and valid
+      if (academicYearId && academicYearId !== 'default') {
+        try {
+          const AcademicYear = mongoose.model('AcademicYear');
+          const academicYear = await AcademicYear.findById(academicYearId);
+          if (academicYear) {
+            grade.academicYear = {
+              _id: academicYear._id,
+              name: academicYear.name,
+              year: academicYear.ethiopianYear || academicYear.name,
+              ethiopianYear: academicYear.ethiopianYear,
+              gregorianYear: academicYear.gregorianYear
+            };
+          }
+        } catch (err) {
+          console.log("Could not fetch academic year:", err.message);
+        }
+      }
+    }
+    
+    // Save as draft
+    grade.draft = {
+      semester: semester,
+      mid: midNum,
+      quiz: quizNum,
+      assignment: assignmentNum,
+      final: finalNum,
+      total: total,
+      savedAt: new Date()
+    };
+    
+    await grade.save();
+    
+    console.log("Draft saved successfully");
+    res.status(200).json({ 
+      success: true, 
+      message: "Draft saved successfully",
+      grade: grade
+    });
+    
   } catch (err) {
-    console.error("Grade Draft Save Error:", err);
-    res.status(500).json({ message: "Server Error" });
+    console.error("Save Draft Error:", err);
+    res.status(500).json({ 
+      success: false, 
+      message: "Server error while saving draft", 
+      error: err.message 
+    });
   }
 };
+
 
 
 
@@ -800,57 +852,86 @@ export const updateSemesterStatus = async (req, res) => {
 };
 
 // Check if all students in a class have submitted Semester 1 grades
+// Check if all students have submitted Semester 1 grades
 export const checkSemester1Completion = async (req, res) => {
   try {
     const { courseId } = req.params;
     const { academicYearId } = req.query;
     
-    // Get all students assigned to this course/class
-    const assignments = await TeacherAssignment.find({ 
-      course: courseId,
-      academicYear: academicYearId 
-    }).populate('students');
+    console.log("Checking Semester 1 completion for course:", courseId);
+    console.log("Academic Year ID:", academicYearId);
     
-    // Get all grades for this course
-    const grades = await Grade.find({ 
-      course: courseId,
-      "academicYear._id": academicYearId 
-    });
+    // First, find all students assigned to this course
+    // You need to get the class/assignment for this course
+    const TeacherAssignment = mongoose.model('TeacherAssignment');
     
-    // Get all student IDs from the class
-    const allStudentIds = [];
-    assignments.forEach(assignment => {
-      assignment.students.forEach(student => {
-        allStudentIds.push(student._id.toString());
+    let assignment = null;
+    try {
+      assignment = await TeacherAssignment.findOne({ 
+        course: courseId,
+        academicYear: academicYearId 
+      }).populate('students');
+    } catch (err) {
+      console.log("TeacherAssignment model not found or no assignment");
+    }
+    
+    // If no assignment found, try to get students from Grade model
+    let totalStudents = 0;
+    let submittedCount = 0;
+    let allStudentIds = [];
+    
+    if (assignment && assignment.students) {
+      // Get all student IDs from the assignment
+      allStudentIds = assignment.students.map(s => s._id.toString());
+      totalStudents = allStudentIds.length;
+      
+      // Find grades for these students
+      const grades = await Grade.find({ 
+        course: courseId,
+        student: { $in: allStudentIds },
+        "academicYear._id": academicYearId 
       });
-    });
+      
+      // Count how many have submitted (sem1 locked)
+      for (const studentId of allStudentIds) {
+        const grade = grades.find(g => g.student.toString() === studentId);
+        if (grade && grade.sem1 && grade.sem1.locked === true) {
+          submittedCount++;
+        }
+      }
+    } else {
+      // Alternative: Get all grades for this course
+      const grades = await Grade.find({ 
+        course: courseId,
+        "academicYear._id": academicYearId 
+      });
+      
+      totalStudents = grades.length;
+      submittedCount = grades.filter(g => g.sem1 && g.sem1.locked === true).length;
+    }
     
-    // Get student IDs that have submitted Semester 1 (locked)
-    const submittedStudentIds = grades
-      .filter(grade => grade.sem1?.locked === true)
-      .map(grade => grade.student.toString());
+    const allCompleted = totalStudents > 0 && submittedCount === totalStudents;
+    const completionPercentage = totalStudents > 0 ? (submittedCount / totalStudents) * 100 : 0;
     
-    // Check if all students have submitted
-    const allCompleted = allStudentIds.length > 0 && 
-      allStudentIds.every(id => submittedStudentIds.includes(id));
-    
-    const completedCount = submittedStudentIds.length;
-    const totalStudents = allStudentIds.length;
+    console.log(`Total students: ${totalStudents}, Submitted: ${submittedCount}, All completed: ${allCompleted}`);
     
     res.json({
       success: true,
       allCompleted,
-      completedCount,
-      totalStudents,
-      completionPercentage: totalStudents > 0 ? (completedCount / totalStudents) * 100 : 0
+      completedCount: submittedCount,
+      totalStudents: totalStudents,
+      completionPercentage: completionPercentage
     });
     
   } catch (error) {
     console.error("Error checking semester 1 completion:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to check semester completion", 
+      error: error.message 
+    });
   }
 };
-
 // Get submission status for all students in a class
 export const getSemester1SubmissionStatus = async (req, res) => {
   try {
@@ -979,15 +1060,35 @@ export const getStudentReleasedResults = async (req, res) => {
       isReleased: true  // Only show released grades
     };
     
-    if (academicYearId) {
-      query['academicYear._id'] = academicYearId;
-    }
-    
     const grades = await Grade.find(query)
       .populate('course', 'name gradeLevel stream')
       .populate('teacher', 'fullName');
     
     console.log("Found grades:", grades.length);
+    
+    // If no grades found, return empty results
+    if (grades.length === 0) {
+      // Get student info
+      const student = await Student.findById(studentId).select('fullName username grade section stream');
+      
+      return res.json({
+        success: true,
+        student: student ? {
+          name: student.fullName,
+          username: student.username,
+          grade: student.grade,
+          section: student.section,
+          stream: student.stream || ''
+        } : null,
+        results: [],
+        summary: {
+          totalScore: "0.00",
+          average: "0",
+          totalCourses: 0,
+          status: "No Results"
+        }
+      });
+    }
     
     // Calculate statistics
     let totalScore = 0;
@@ -1023,10 +1124,6 @@ export const getStudentReleasedResults = async (req, res) => {
     // Get student info
     const student = await Student.findById(studentId).select('fullName username grade section stream');
     
-    if (!student) {
-      return res.status(404).json({ message: "Student not found" });
-    }
-    
     res.json({
       success: true,
       student: {
@@ -1047,10 +1144,13 @@ export const getStudentReleasedResults = async (req, res) => {
     
   } catch (error) {
     console.error("Error fetching student results:", error);
-    res.status(500).json({ message: "Failed to fetch results", error: error.message });
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to fetch results", 
+      error: error.message 
+    });
   }
 };
-
 // Get available academic years for student
 export const getStudentAcademicYears = async (req, res) => {
   try {
@@ -1058,7 +1158,7 @@ export const getStudentAcademicYears = async (req, res) => {
     
     console.log("Fetching academic years for student:", studentId);
     
-    // First try to get from Grade model with academicYear embedded
+    // Try to get from Grade model with academicYear embedded
     let grades = await Grade.find({ 
       student: studentId,
       isReleased: true 
@@ -1083,15 +1183,30 @@ export const getStudentAcademicYears = async (req, res) => {
     
     // If no academic years found in grades, try to get from AcademicYear model
     if (years.length === 0) {
-      const AcademicYear = mongoose.model('AcademicYear');
-      const allYears = await AcademicYear.find({ isActive: true }).sort({ createdAt: -1 });
-      
-      for (const year of allYears) {
+      try {
+        // Import AcademicYear model dynamically or require it
+        const AcademicYear = mongoose.model('AcademicYear');
+        const allYears = await AcademicYear.find({}).sort({ createdAt: -1 });
+        
+        for (const year of allYears) {
+          years.push({
+            _id: year._id,
+            name: year.name,
+            ethiopianYear: year.ethiopianYear,
+            gregorianYear: year.gregorianYear
+          });
+        }
+      } catch (err) {
+        console.log("AcademicYear model not found or no data:", err.message);
+        // If no AcademicYear model, return some default years
+        const currentYear = new Date().getFullYear();
+        const ethiopianYear = currentYear - 8;
+        
         years.push({
-          _id: year._id,
-          name: year.name,
-          ethiopianYear: year.ethiopianYear,
-          gregorianYear: year.gregorianYear
+          _id: 'default',
+          name: `${ethiopianYear} EC - ${ethiopianYear + 1} EC`,
+          ethiopianYear: `${ethiopianYear} EC`,
+          gregorianYear: `${currentYear}/${currentYear + 1}`
         });
       }
     }
@@ -1105,10 +1220,13 @@ export const getStudentAcademicYears = async (req, res) => {
     
   } catch (error) {
     console.error("Error fetching academic years:", error);
-    res.status(500).json({ message: "Failed to fetch academic years", error: error.message });
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to fetch academic years", 
+      error: error.message 
+    });
   }
 };
-
 // Request grade review
 export const requestGradeReview = async (req, res) => {
   try {

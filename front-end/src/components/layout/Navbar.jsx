@@ -4,18 +4,25 @@ import logo from "../../assets/react.svg";
 import ThemeToggle from "../../landing-pages/ThemeToggle";
 import { useTheme } from "../../context/ThemeContext";
 import { LogOut, ChevronDown, User, Settings, Shield } from "lucide-react";
-
+import { useNavigate } from "react-router-dom";
+import NotificationBell from "../ui/NotificationBell";
 import defaultAvatar from "../../assets/images/hero.png";
 
 const Navbar = () => {
   const { user, logout } = useAuth();
   const { theme } = useTheme();
+   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   
   const avatar = user?.profilePic || defaultAvatar;
 
   const handleLogout = () => {
     logout();
+    setIsDropdownOpen(false);
+    navigate("/login");
+  };
+    const handleNavigate = (path) => {
+    navigate(path);
     setIsDropdownOpen(false);
   };
 
@@ -48,38 +55,39 @@ const Navbar = () => {
         </div>
 
         {/* Right Section */}
-        <div className="flex items-center space-x-4">
+           <div className="flex items-center space-x-4">
+          {/* Notification Bell */}
+          <NotificationBell />
+
+          {/* Theme Toggle */}
+          <div className="hidden sm:block">
+            <ThemeToggle />
+          </div>
+
           {/* User Profile Dropdown */}
           <div className="relative">
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className="flex items-center space-x-3 group focus:outline-none"
             >
-              {/* Avatar with status indicator */}
               <div className="relative">
                 <img
                   src={avatar}
                   alt="Profile"
-                  className="w-12 h-12 rounded-full object-cover border-2 shadow-lg transition-all duration-300 group-hover:scale-105 group-hover:shadow-xl"
+                  className="w-10 h-10 rounded-full object-cover border-2 shadow-lg transition-all duration-300 group-hover:scale-105 group-hover:shadow-xl"
                   style={{ borderColor: "var(--border)" }}
                 />
                 <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2" 
                      style={{ borderColor: "var(--card)" }}></div>
               </div>
               
-              {/* User Info */}
               <div className="text-left hidden md:block">
-                <p className="font-semibold text-sm">{user?.name || "User"}</p>
+                <p className="font-semibold text-sm">{user?.name || user?.fullName || "User"}</p>
                 <p className="text-xs opacity-70 flex items-center gap-1">
                   <Shield size={12} />
                   {user?.role || "Guest"}
                 </p>
               </div>
-              
-              <ChevronDown 
-                size={16} 
-                className={`hidden md:block transition-transform duration-300 ${isDropdownOpen ? "rotate-180" : ""}`}
-              />
             </button>
 
             {/* Dropdown Menu */}
@@ -98,30 +106,22 @@ const Navbar = () => {
                   }}
                 >
                   <div className="p-3 border-b" style={{ borderColor: "var(--border)" }}>
-                    <p className="font-semibold text-sm">{user?.name || "User"}</p>
+                    <p className="font-semibold text-sm">{user?.name || user?.fullName || "User"}</p>
                     <p className="text-xs opacity-60">{user?.email || user?.role || "No email"}</p>
                   </div>
                   
                   <div className="py-2">
                     <button 
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        // Navigate to profile if needed
-                      }}
-                      className="w-full flex items-center gap-3 px-4 py-2 text-sm transition-all duration-200 hover:bg-opacity-10"
-                      style={{ hover: { background: "var(--primary)" } }}
+                      onClick={() => handleNavigate("/profile")}
+                      className="w-full flex items-center gap-3 px-4 py-2 text-sm transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                     >
                       <User size={16} />
-                      <span>Profile Settings</span>
+                      <span>My Profile</span>
                     </button>
                     
                     <button 
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        // Navigate to settings if needed
-                      }}
-                      className="w-full flex items-center gap-3 px-4 py-2 text-sm transition-all duration-200"
-                      style={{ hover: { background: "var(--primary)" } }}
+                      onClick={() => handleNavigate("/admin/profile-settings")}
+                      className="w-full flex items-center gap-3 px-4 py-2 text-sm transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                     >
                       <Settings size={16} />
                       <span>Account Settings</span>
@@ -131,7 +131,7 @@ const Navbar = () => {
                     
                     <button 
                       onClick={handleLogout}
-                      className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-500 transition-all duration-200 hover:bg-red-500/10"
+                      className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-500 transition-all duration-200 hover:bg-red-50 dark:hover:bg-red-900/20"
                     >
                       <LogOut size={16} />
                       <span>Logout</span>
@@ -140,26 +140,8 @@ const Navbar = () => {
                 </div>
               </>
             )}
+            </div>
           </div>
-
-          {/* Theme Toggle with enhanced styling */}
-          <div className="hidden sm:block">
-            <ThemeToggle />
-          </div>
-
-          {/* Logout Button (Mobile) */}
-          <button
-            onClick={handleLogout}
-            className="sm:hidden px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-300 hover:scale-105"
-            style={{
-              background: "var(--bg)",
-              color: "var(--text)",
-              border: "1px solid var(--border)",
-            }}
-          >
-            <LogOut size={18} />
-          </button>
-        </div>
       </div>
 
       {/* Add animation styles to your global CSS */}
