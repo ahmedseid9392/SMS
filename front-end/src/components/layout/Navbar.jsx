@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
-import logo from "../../assets/react.svg";
+//import logo from "../../assets/react.svg";
 import ThemeToggle from "../../landing-pages/ThemeToggle";
 import { useTheme } from "../../context/ThemeContext";
 import { LogOut, ChevronDown, User, Settings, Shield } from "lucide-react";
@@ -41,7 +41,7 @@ profilePicture || defaultAvatar;
         <div className="flex items-center space-x-3 group cursor-pointer">
           <div className="relative">
             <img 
-              src={logo} 
+              src="" 
               alt="School Logo" 
               className="h-10 w-10 object-contain transition-all duration-300 group-hover:scale-110 group-hover:rotate-6" 
             />

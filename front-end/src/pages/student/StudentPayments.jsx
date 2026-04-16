@@ -4,30 +4,26 @@ import { useAuth } from "../../context/AuthContext";
 import { 
   CreditCard, 
   Download, 
-  Eye, 
   Calendar, 
   AlertCircle,
   CheckCircle,
   Clock,
   TrendingUp,
-  FileText,
-  Printer
+  Eye
 } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../api/axios";
 import ChapaPayment from "../../components/payment/ChapaPayment";
-
+//import MockPayment from "../../components/payment/MockPayment";
 const StudentPayments = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [payments, setPayments] = useState([]);
   const [summary, setSummary] = useState(null);
-  const [selectedPayment, setSelectedPayment] = useState(null);
-  const [showReceipt, setShowReceipt] = useState(false);
   const [academicYears, setAcademicYears] = useState([]);
   const [selectedYear, setSelectedYear] = useState("");
   const [showChapaModal, setShowChapaModal] = useState(false);
-const [selectedPaymentForChapa, setSelectedPaymentForChapa] = useState(null);
+  const [selectedPaymentForChapa, setSelectedPaymentForChapa] = useState(null);
 
   useEffect(() => {
     fetchAcademicYears();
@@ -59,7 +55,11 @@ const [selectedPaymentForChapa, setSelectedPaymentForChapa] = useState(null);
       const response = await api.get(`/payments/student/${user?.id}`, {
         params: { academicYear: selectedYear }
       });
-      setPayments(response.data.data?.payments || []);
+      
+      const paymentsData = response.data.data?.payments || [];
+      console.log("All payments:", paymentsData);
+      
+      setPayments(paymentsData);
       setSummary(response.data.data?.summary || null);
     } catch (error) {
       console.error("Error fetching payments:", error);
@@ -78,7 +78,7 @@ const [selectedPaymentForChapa, setSelectedPaymentForChapa] = useState(null);
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `receipt_${payment.receiptNumber}.pdf`);
+      link.setAttribute('download', `receipt_${payment.receiptNumber || payment._id}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -106,6 +106,7 @@ const [selectedPaymentForChapa, setSelectedPaymentForChapa] = useState(null);
   };
 
   const formatDate = (date) => {
+    if (!date) return "Not paid yet";
     return new Date(date).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
@@ -118,8 +119,12 @@ const [selectedPaymentForChapa, setSelectedPaymentForChapa] = useState(null);
       style: 'currency',
       currency: 'ETB',
       minimumFractionDigits: 0
-    }).format(amount);
+    }).format(amount || 0);
   };
+
+  // Filter payments - show all, but pay button only for unpaid
+  const pendingPayments = payments.filter(p => p.status !== "paid");
+  const paidPayments = payments.filter(p => p.status === "paid");
 
   if (loading) {
     return (
@@ -136,9 +141,9 @@ const [selectedPaymentForChapa, setSelectedPaymentForChapa] = useState(null);
 
   return (
     <Layout>
-      <div className="space-y-6">
+      <div className="space-y-6 p-6">
         {/* Header */}
-        <div className="flex justify-between items-center">
+        <div className="flex flex-wrap justify-between items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
               Payment History
@@ -150,8 +155,8 @@ const [selectedPaymentForChapa, setSelectedPaymentForChapa] = useState(null);
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(e.target.value)}
-              className="px-4 py-2 rounded-xl border"
-              style={{ background: "var(--bg)", borderColor: "var(--border)" }}
+              className="px-4 py-2 rounded-xl"
+              style={{ background: "var(--bg)", color: "var(--text)", border: "1px solid var(--border)" }}
             >
               {academicYears.map((year) => (
                 <option key={year} value={year}>{year}</option>
@@ -163,8 +168,7 @@ const [selectedPaymentForChapa, setSelectedPaymentForChapa] = useState(null);
         {/* Summary Cards */}
         {summary && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="rounded-2xl shadow-lg p-6"
-                 style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+            <div className="rounded-2xl shadow-lg p-6" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm opacity-70">Total Due</p>
@@ -176,8 +180,7 @@ const [selectedPaymentForChapa, setSelectedPaymentForChapa] = useState(null);
               </div>
             </div>
 
-            <div className="rounded-2xl shadow-lg p-6"
-                 style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+            <div className="rounded-2xl shadow-lg p-6" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm opacity-70">Total Paid</p>
@@ -189,8 +192,7 @@ const [selectedPaymentForChapa, setSelectedPaymentForChapa] = useState(null);
               </div>
             </div>
 
-            <div className="rounded-2xl shadow-lg p-6"
-                 style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+            <div className="rounded-2xl shadow-lg p-6" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm opacity-70">Balance</p>
@@ -204,8 +206,7 @@ const [selectedPaymentForChapa, setSelectedPaymentForChapa] = useState(null);
               </div>
             </div>
 
-            <div className="rounded-2xl shadow-lg p-6"
-                 style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+            <div className="rounded-2xl shadow-lg p-6" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm opacity-70">Late Fees</p>
@@ -234,71 +235,41 @@ const [selectedPaymentForChapa, setSelectedPaymentForChapa] = useState(null);
           </div>
         )}
 
-        {/* Payments Table */}
-        <div className="rounded-2xl shadow-lg overflow-hidden"
-             style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
-          
-          <div className="p-6 border-b flex gap-20" style={{ borderColor: "var(--border)" }}>
-            <h2 className="text-xl font-semibold flex items-center gap-2">
-              <Calendar size={20} />
-              Monthly Payment Details
-            </h2>
-                                    <button
-  onClick={() => {
-    setSelectedPaymentForChapa(payments);
-    setShowChapaModal(true);
-  }}
-  className="p-2 rounded-lg bg-green-500 text-white hover:bg-green-600"
-  title="Pay Online"
->
-  <CreditCard size={16} />
-</button>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700">
-                  <th className="p-3 border text-left">Month</th>
-                  <th className="p-3 border text-center">Due Date</th>
-                  <th className="p-3 border text-center">Amount Due</th>
-                  <th className="p-3 border text-center">Late Fee</th>
-                  <th className="p-3 border text-center">Discount</th>
-                  <th className="p-3 border text-center">Paid Amount</th>
-                  <th className="p-3 border text-center">Status</th>
-                  <th className="p-3 border text-center">Actions</th>
-                 </tr>
-              </thead>
-              <tbody>
-                {payments.length === 0 ? (
-                  <tr>
-                    <td colSpan="8" className="text-center p-8">
-                      <div className="flex flex-col items-center gap-2">
-                        <CreditCard size={48} className="opacity-30" />
-                        <p className="text-gray-500">No payment records found</p>
-                      </div>
-                    </td>
+        {/* Pending Payments Section - Show Pay Button Here */}
+        {pendingPayments.length > 0 && (
+          <div className="rounded-2xl shadow-lg overflow-hidden" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+            <div className="p-4 border-b bg-yellow-50 dark:bg-yellow-900/20" style={{ borderColor: "var(--border)" }}>
+              <h2 className="text-xl font-semibold flex items-center gap-2 text-yellow-700 dark:text-yellow-300">
+                <AlertCircle size={20} />
+                Pending Payments (Need Your Attention)
+              </h2>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700">
+                    <th className="p-3 border text-left">Month</th>
+                    <th className="p-3 border text-center">Due Date</th>
+                    <th className="p-3 border text-right">Amount Due</th>
+                    <th className="p-3 border text-right">Late Fee</th>
+                    <th className="p-3 border text-right">Total to Pay</th>
+                    <th className="p-3 border text-center">Status</th>
+                    <th className="p-3 border text-center">Action</th>
                   </tr>
-                ) : (
-                  payments.map((payment, index) => {
+                </thead>
+                <tbody>
+                  {pendingPayments.map((payment) => {
                     const statusBadge = getStatusBadge(payment.status);
                     const StatusIcon = statusBadge.icon;
-                    const isOverdue = payment.status === "overdue";
+                    const totalToPay = (payment.amountDue || 0) + (payment.lateFee || 0);
                     
                     return (
-                      <tr key={payment._id} className={`border-b ${isOverdue ? 'bg-red-50 dark:bg-red-900/10' : ''}`}>
+                      <tr key={payment._id} className="border-b bg-yellow-50/30 dark:bg-yellow-900/10">
                         <td className="p-3 font-medium">{payment.month}</td>
                         <td className="p-3 text-center">{formatDate(payment.dueDate)}</td>
-                        <td className="p-3 text-center">{formatCurrency(payment.amountDue)}</td>
-                        <td className="p-3 text-center text-red-600">
-                          {payment.lateFee > 0 ? formatCurrency(payment.lateFee) : "-"}
-                        </td>
-                        <td className="p-3 text-center text-green-600">
-                          {payment.discountAmount > 0 ? formatCurrency(payment.discountAmount) : "-"}
-                        </td>
-                        <td className="p-3 text-center font-semibold">
-                          {payment.amountPaid > 0 ? formatCurrency(payment.amountPaid) : "-"}
-                        </td>
+                        <td className="p-3 text-right">{formatCurrency(payment.amountDue)}</td>
+                        <td className="p-3 text-right text-red-600">{formatCurrency(payment.lateFee)}</td>
+                        <td className="p-3 text-right font-bold text-orange-600">{formatCurrency(totalToPay)}</td>
                         <td className="p-3 text-center">
                           <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${statusBadge.color}`}>
                             <StatusIcon size={12} />
@@ -306,38 +277,94 @@ const [selectedPaymentForChapa, setSelectedPaymentForChapa] = useState(null);
                           </span>
                         </td>
                         <td className="p-3 text-center">
-                          {payment.status === "paid" && payment.receiptNumber && (
-                            <button
-                              onClick={() => downloadReceipt(payment)}
-                              className="p-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-colors"
-                              title="Download Receipt"
-                            >
-                              <Download size={16} />
-                            </button>
-                          )}
-  
+                          <button
+                            onClick={() => {
+                              console.log("Selected payment for Chapa:", payment);
+                              setSelectedPaymentForChapa({
+                                month: payment.month,
+                                amount: totalToPay,
+                                paymentId: payment._id
+                              });
+                              setShowChapaModal(true);
+                            }}
+                            className="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors flex items-center gap-2 mx-auto"
+                          >
+                            <CreditCard size={16} />
+                            Pay Now
+                          </button>
                         </td>
                       </tr>
                     );
-                  })
-                )}
-              </tbody>
-            </table>
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
+        )}
 
-          {/* Footer Note */}
-          <div className="p-4 border-t bg-gray-50 dark:bg-gray-800/50">
-            <p className="text-xs text-center opacity-60">
-              Late fee of 5 Birr per day applies after 10-day grace period. Maximum late fee is 30% of monthly fee.
-            </p>
+        {/* Paid Payments History Section */}
+        {paidPayments.length > 0 && (
+          <div className="rounded-2xl shadow-lg overflow-hidden" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+            <div className="p-4 border-b" style={{ borderColor: "var(--border)" }}>
+              <h2 className="text-xl font-semibold flex items-center gap-2">
+                <CheckCircle size={20} className="text-green-500" />
+                Payment History
+              </h2>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700">
+                    <th className="p-3 border text-left">Month</th>
+                    <th className="p-3 border text-center">Paid Date</th>
+                    <th className="p-3 border text-right">Amount Paid</th>
+                    <th className="p-3 border text-right">Late Fee</th>
+                    <th className="p-3 border text-right">Discount</th>
+                    <th className="p-3 border text-center">Receipt</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paidPayments.map((payment) => (
+                    <tr key={payment._id} className="border-b">
+                      <td className="p-3 font-medium">{payment.month}</td>
+                      <td className="p-3 text-center">{formatDate(payment.paidDate)}</td>
+                      <td className="p-3 text-right text-green-600 font-semibold">{formatCurrency(payment.amountPaid)}</td>
+                      <td className="p-3 text-right">{formatCurrency(payment.lateFee)}</td>
+                      <td className="p-3 text-right">{formatCurrency(payment.discountAmount)}</td>
+                      <td className="p-3 text-center">
+                        {payment.receiptNumber && (
+                          <button
+                            onClick={() => downloadReceipt(payment)}
+                            className="p-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-colors"
+                            title="Download Receipt"
+                          >
+                            <Download size={16} />
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* No Payments Message */}
+        {payments.length === 0 && (
+          <div className="rounded-2xl shadow-lg p-12 text-center" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+            <div className="flex flex-col items-center gap-4">
+              <CreditCard size={48} className="opacity-30" />
+              <h3 className="text-xl font-semibold">No Payment Records</h3>
+              <p className="text-sm opacity-70">No payment records found for this academic year.</p>
+            </div>
+          </div>
+        )}
 
         {/* Payment Instructions */}
-        <div className="rounded-2xl shadow-lg p-6"
-             style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+        <div className="rounded-2xl shadow-lg p-6" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
           <h3 className="font-semibold mb-3 flex items-center gap-2">
-            <FileText size={18} />
+            <AlertCircle size={18} />
             Payment Instructions
           </h3>
           <ul className="space-y-2 text-sm opacity-70">
@@ -349,22 +376,24 @@ const [selectedPaymentForChapa, setSelectedPaymentForChapa] = useState(null);
             <li>• For payment inquiries, contact the finance office</li>
           </ul>
         </div>
-
-          {/* Chapa modal  */}
-{showChapaModal && selectedPaymentForChapa && (
-  <ChapaPayment
-    studentId={user?.id}
-    academicYear={selectedYear}
-    month={selectedPaymentForChapa.month}
-    amount={selectedPaymentForChapa.amountDue + selectedPaymentForChapa.lateFee}
-    onSuccess={() => {
-      setShowChapaModal(false);
-      fetchPayments();
-    }}
-    onCancel={() => setShowChapaModal(false)}
-  />
-)}
       </div>
+
+      {/* Chapa Payment Modal */}
+      {showChapaModal && selectedPaymentForChapa && (
+        <ChapaPayment
+          studentId={user?.id}
+          academicYear={selectedYear}
+          month={selectedPaymentForChapa.month}
+          amount={selectedPaymentForChapa.amount}
+          email={user?.email}
+          onSuccess={() => {
+            setShowChapaModal(false);
+            fetchPayments();
+            toast.success("Payment successful! Your payment has been confirmed.");
+          }}
+          onCancel={() => setShowChapaModal(false)}
+        />
+      )}
     </Layout>
   );
 };

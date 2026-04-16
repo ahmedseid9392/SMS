@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { CreditCard, Loader2, X, CheckCircle } from 'lucide-react';
+import { CreditCard, Loader2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../api/axios';
 
-const ChapaPayment = ({ studentId, academicYear, month, amount, email: userEmail, onSuccess, onCancel }) => {
+const MockPayment = ({ studentId, academicYear, month, amount, email: userEmail, onSuccess, onCancel }) => {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState(userEmail || '');
-  const [showSuccess, setShowSuccess] = useState(false);
 
   const handlePayment = async () => {
     if (!email) {
@@ -16,7 +15,8 @@ const ChapaPayment = ({ studentId, academicYear, month, amount, email: userEmail
     
     setLoading(true);
     try {
-      const response = await api.post('/payments/chapa/initialize', {
+      // Step 1: Initialize payment
+      const initResponse = await api.post('/payments/mock/initialize', {
         studentId,
         academicYear,
         month,
@@ -24,33 +24,29 @@ const ChapaPayment = ({ studentId, academicYear, month, amount, email: userEmail
         email,
       });
       
-      console.log("Payment response:", response.data);
+      console.log("Init response:", initResponse.data);
       
-      if (response.data.success) {
-        setShowSuccess(true);
-        toast.success(response.data.message || "Payment successful!");
-        
-        // Refresh after 2 seconds
-        setTimeout(() => {
-          if (onSuccess) onSuccess();
-        }, 2000);
-      } else {
-        throw new Error(response.data.message || 'Payment failed');
+      if (!initResponse.data.success) {
+        throw new Error(initResponse.data.message || 'Failed to initialize payment');
       }
+      
+      const tx_ref = initResponse.data.tx_ref;
+      
+      // Step 2: Verify payment
+      const verifyResponse = await api.get(`/payments/mock/verify?tx_ref=${tx_ref}`);
+      
+      console.log("Verify response:", verifyResponse.data);
+      
+      if (verifyResponse.data.success) {
+        toast.success("Payment successful!");
+        if (onSuccess) onSuccess();
+      } else {
+        throw new Error(verifyResponse.data.message || 'Payment verification failed');
+      }
+      
     } catch (error) {
       console.error("Payment error:", error);
-      const errorMsg = error.response?.data?.message || error.message;
-      
-      // Check if it's actually a success message from mock
-      if (errorMsg.includes("successful") || errorMsg.includes("Test payment")) {
-        setShowSuccess(true);
-        toast.success("Payment successful!");
-        setTimeout(() => {
-          if (onSuccess) onSuccess();
-        }, 2000);
-      } else {
-        toast.error(errorMsg || "Failed to process payment");
-      }
+      toast.error(error.response?.data?.message || error.message || "Failed to process payment");
     } finally {
       setLoading(false);
     }
@@ -63,32 +59,13 @@ const ChapaPayment = ({ studentId, academicYear, month, amount, email: userEmail
     }).format(amount);
   };
 
-  if (showSuccess) {
-    return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 w-full max-w-md text-center">
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle size={48} className="text-green-600" />
-          </div>
-          <h2 className="text-2xl font-bold text-green-600 mb-2">Payment Successful!</h2>
-          <p className="text-gray-600 dark:text-gray-300 mb-4">
-            Your payment of {formatCurrency(amount)} for {month} has been confirmed.
-          </p>
-          <p className="text-sm text-gray-500">
-            Redirecting...
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-md">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-bold" style={{ color: "var(--text)" }}>
             <CreditCard size={24} className="inline mr-2 text-blue-500" />
-            Make Payment
+            Test Payment (Mock Mode)
           </h2>
           <button onClick={onCancel} className="p-1 hover:bg-gray-100 rounded">
             <X size={24} />
@@ -96,6 +73,12 @@ const ChapaPayment = ({ studentId, academicYear, month, amount, email: userEmail
         </div>
         
         <div className="space-y-4">
+          <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200">
+            <p className="text-sm text-yellow-600 dark:text-yellow-400">
+              ⚠️ This is a <strong>TEST MODE</strong> payment. No actual money will be charged.
+            </p>
+          </div>
+          
           <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
             <p className="text-sm text-blue-600 dark:text-blue-400">
               You are about to pay <strong>{formatCurrency(amount)}</strong> for <strong>{month}</strong>
@@ -117,12 +100,6 @@ const ChapaPayment = ({ studentId, academicYear, month, amount, email: userEmail
             />
           </div>
           
-          <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
-            <p className="text-xs text-yellow-600 dark:text-yellow-400">
-              ℹ️ Demo Mode: This is a test payment. No actual charge will be made.
-            </p>
-          </div>
-          
           <div className="flex gap-3">
             <button
               onClick={onCancel}
@@ -141,14 +118,18 @@ const ChapaPayment = ({ studentId, academicYear, month, amount, email: userEmail
                   Processing...
                 </>
               ) : (
-                'Pay Now (Demo)'
+                'Pay Now (Test)'
               )}
             </button>
           </div>
+          
+          <p className="text-xs text-center opacity-60">
+            This is a test payment. Click "Pay Now" to simulate a successful payment.
+          </p>
         </div>
       </div>
     </div>
   );
 };
 
-export default ChapaPayment;
+export default MockPayment;

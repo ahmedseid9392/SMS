@@ -36,6 +36,7 @@ import ParentPayments from "../pages/parent/ParentPayments";
 import AdminPayments from "../pages/admin/AdminPayments";
 import PaymentSuccess from "../pages/PaymentSuccess";
 import PaymentFailed from "../pages/PaymentFailed";
+import MockPaymentSuccess from "../pages/MockPaymentSuccess";
 const AppRoutes = () => (
   <BrowserRouter>
     <Routes>
@@ -267,6 +268,7 @@ const AppRoutes = () => (
     <Route path="/admin/payments" element={<AdminPayments />} />
     <Route path="/payment/success" element={<PaymentSuccess />} />
 <Route path="/payment/failed" element={<PaymentFailed />} />
+<Route path="/mock-payment" element={<MockPaymentSuccess />} />
     </Routes>
   </BrowserRouter>
 );
