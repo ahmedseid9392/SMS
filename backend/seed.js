@@ -16,23 +16,22 @@ await User.create([
   },
   {
     name: "Sarah Johnson",
-    username: "GVT2018011",
+    username: "GVA2018012",
     password: "ChangeMe@123",
-    role: "TEACHER",
+    role: "ADMIN",
   },
   {
     name: "Ahmed Ali",
-    username: "GVS2018011",
+    username: "GVA2018013",
     password: "ChangeMe@123",
-    role: "STUDENT",
-    grade: "10",
-    section: "A",
+    role: "ADMIN",
+    
   },
   {
     name: "John Doe",
-    username: "GVP2018011",
+    username: "GVP2018014",
     password: "ChangeMe@123",
-    role: "PARENT",
+    role: "ADMIN",
   },
 ]);
 

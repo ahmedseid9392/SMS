@@ -1,4 +1,3 @@
-// backend/src/models/Payment.model.js
 import mongoose from "mongoose";
 
 const paymentSchema = new mongoose.Schema({
@@ -13,13 +12,12 @@ const paymentSchema = new mongoose.Schema({
     required: true
   },
   
-  // Payment details
   month: {
-    type: String, // e.g., "January 2024"
+    type: String,
     required: true
   },
   monthIndex: {
-    type: Number, // 0-11 for sorting
+    type: Number,
     required: true
   },
   year: {
@@ -63,7 +61,6 @@ const paymentSchema = new mongoose.Schema({
     default: "pending"
   },
   
-  // Payment transaction
   transactionId: {
     type: String,
     unique: true,
@@ -71,7 +68,7 @@ const paymentSchema = new mongoose.Schema({
   },
   paymentMethod: {
     type: String,
-    enum: ["chapa", "cash", "bank", "manual"],
+    enum: ["chapa", "cash", "bank", "manual", "mock"], // Added 'mock' here
     default: "manual"
   },
   receiptNumber: {
@@ -80,7 +77,6 @@ const paymentSchema = new mongoose.Schema({
     sparse: true
   },
   
-  // Fine tracking
   fineDays: {
     type: Number,
     default: 0
@@ -89,7 +85,6 @@ const paymentSchema = new mongoose.Schema({
     type: Date
   },
   
-  // Discount tracking
   discountType: {
     type: String,
     enum: ["none", "early_payment", "sibling", "merit", "manual", "bulk"],
@@ -103,7 +98,6 @@ const paymentSchema = new mongoose.Schema({
     ref: "User"
   },
   
-  // Payment for multiple months
   isBulkPayment: {
     type: Boolean,
     default: false
@@ -113,13 +107,11 @@ const paymentSchema = new mongoose.Schema({
     monthIndex: Number
   }],
   
-  // Remarks
   remarks: {
     type: String
   }
 }, { timestamps: true });
 
-// Indexes for faster queries
 paymentSchema.index({ student: 1, academicYear: 1, monthIndex: 1 });
 paymentSchema.index({ status: 1, dueDate: 1 });
 paymentSchema.index({ transactionId: 1 });

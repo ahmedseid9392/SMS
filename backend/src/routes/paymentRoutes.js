@@ -15,9 +15,13 @@ import {
 import {
   initializePayment,
   verifyPayment,
-  chapaWebhook,
+  
   getPaymentStatus
 } from '../controllers/chapaController.js';
+import {
+  initializeMockPayment,
+  verifyMockPayment
+} from '../controllers/mockPaymentController.js';
 
 import protect from '../middleware/auth.middleware.js';
 
@@ -50,6 +54,9 @@ router.get('/payments/reports', protect, generatePaymentReport);
 // Chapa payment endpoints
 router.post('/payments/chapa/initialize', protect, initializePayment);
 router.get('/payments/chapa/verify', verifyPayment);
-router.post('/payments/chapa/webhook', chapaWebhook);
+
 router.get('/payments/chapa/status/:tx_ref', protect, getPaymentStatus);
+// Mock payment endpoints (use for testing)
+router.post('/payments/mock/initialize', protect, initializeMockPayment);
+router.get('/payments/mock/verify', verifyMockPayment);
 export default router;
