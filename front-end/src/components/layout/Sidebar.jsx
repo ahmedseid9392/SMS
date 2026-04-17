@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
-import { Menu, X, User, LayoutDashboard, Users, School, BookOpen, UserCheck, GraduationCap, Calendar, ClipboardList, Clock, Bell, Award, FileText } from "lucide-react";
+import { Menu, X, User, LayoutDashboard, Users,CreditCard, School, BookOpen, UserCheck, GraduationCap, Calendar, ClipboardList, Clock, Bell, Award, FileText } from "lucide-react";
 
 const Sidebar = () => {
   const { user } = useAuth();
@@ -22,6 +22,7 @@ const Sidebar = () => {
     { to: "/admin/assignment", label: "Teacher Assignment", icon: UserCheck, color: "from-teal-500 to-cyan-500" },
     { to: "/admin/classes", label: "Classes", icon: GraduationCap, color: "from-yellow-500 to-orange-500" },
     { to: "/admin/grades", label: "Grade", icon: ClipboardList, color: "from-red-500 to-pink-500" },
+    { to: "/admin/payments", label: "Payments", icon: CreditCard, color: "from-green-500 to-emerald-500" },
   ];
 
   const teacherLinks = [
@@ -38,6 +39,7 @@ const Sidebar = () => {
     { to: "/student/results", label: "Results", icon: Award, color: "from-yellow-500 to-orange-500" },
     { to: "/student/assignments", label: "Assignments", icon: FileText, color: "from-blue-500 to-indigo-500" },
     { to: "/student/timetable", label: "Timetable", icon: Clock, color: "from-green-500 to-emerald-500" },
+    { to: "/student/payments", label: "Payments", icon: CreditCard, color: "from-green-500 to-emerald-500" },
   ];
 
   const parentLinks = [
@@ -47,6 +49,7 @@ const Sidebar = () => {
     { to: "/parent/assignments", label: "Assignments", icon: FileText, color: "from-blue-500 to-indigo-500" },
     { to: "/parent/attendance", label: "Attendance", icon: Calendar, color: "from-green-500 to-emerald-500" },
     { to: "/parent/notifications", label: "Notifications", icon: Bell, color: "from-red-500 to-pink-500" },
+    { to: "/parent/payments", label: "Payments", icon: CreditCard, color: "from-green-500 to-emerald-500" },
   ];
 
   const links =

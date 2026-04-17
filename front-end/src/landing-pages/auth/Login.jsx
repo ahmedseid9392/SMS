@@ -198,7 +198,7 @@ const Login = () => {
              style={{ background: "var(--bg)", border: "1px solid var(--border)" }}>
           <p className="font-semibold mb-2">Demo Credentials:</p>
           <p className="opacity-80 font-mono text-xs">
-            Usernames: GVA2018011 | GVS2024001 | GVS2018011 | GVP2018011
+            Usernames: GVS2018011 | GVS2024001 | GVS2024017 | GVP2018011
           </p>
           <p className="opacity-80 mt-1">
             Default Password: <strong className="text-blue-500">ChangeMe@123</strong>

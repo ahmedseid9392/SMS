@@ -7,11 +7,15 @@ export const getCurrentAcademicYear = async () => {
   return response.data;
 };
 
-export const getAllAcademicYears = async () => {
-  const response = await api.get("/academic-years/all");
-  return response.data;
+export const getAcademicYears = async () => {
+  try {
+    const response = await api.get('/academic-years');  // Remove '/all'
+    return response;
+  } catch (error) {
+    console.error("Error fetching academic years:", error);
+    throw error;
+  }
 };
-
 export const createAcademicYear = async (data) => {
   const response = await api.post("/academic-years/create", data);
   return response.data;
@@ -36,16 +40,28 @@ export const getGradingSetting = () => api.get("/grading-setting");
 // Get assigned class students
 export const getAssignedStudents = () => api.get("/teachers/assigned-classes");
 
-// Submit grade
+// Save grade draft
 export const saveGradeDraft = async (data) => {
-  const response = await api.post("/grades/draft", data);
-  return response.data;
+  try {
+    console.log("Saving draft:", data);
+    const response = await api.post('/grades/draft', data);
+    return response.data;
+  } catch (error) {
+    console.error("Error saving draft:", error);
+    throw error;
+  }
 };
 
-// Updated grade APIs with academic year
+// Submit final grade
 export const submitFinalGrade = async (data) => {
-  const response = await api.post("/grades/submit", data);
-  return response.data;
+  try {
+    console.log("Submitting grade:", data);
+    const response = await api.post('/grades/submit', data);
+    return response.data;
+  } catch (error) {
+    console.error("Error submitting grade:", error);
+    throw error;
+  }
 };
 
 // export  default gradeRecord=(data)=>{
@@ -78,9 +94,18 @@ export const checkSemester1Completion = async (courseId, academicYearId) => {
     return response;
   } catch (error) {
     console.error("Error checking semester 1 completion:", error);
-    throw error;
+    // Return a default response instead of throwing
+    return {
+      data: {
+        success: false,
+        allCompleted: false,
+        completedCount: 0,
+        totalStudents: 0,
+        completionPercentage: 0
+      }
+    };
   }
-};
+};;
 
 // Get detailed submission status
 export const getSemester1SubmissionStatus = async (courseId, academicYearId) => {
@@ -153,16 +178,7 @@ export const adminUnlockGrade = (gradeId) =>
   api.patch(`/grades/unlock/${gradeId}`);
 
 
-// Get all academic years
-export const getAcademicYears = async () => {
-  try {
-    const response = await api.get('/academic-years');
-    return response;
-  } catch (error) {
-    console.error("Error fetching academic years:", error);
-    throw error;
-  }
-};
+
 
 // Get student's released results
 export const getStudentReleasedResults = async (academicYearId, semester) => {
@@ -180,7 +196,7 @@ export const getStudentReleasedResults = async (academicYearId, semester) => {
 // Get available academic years for student
 export const getStudentAcademicYears = async () => {
   try {
-    const response = await api.get('/student/results/academic-years');
+   const response = await api.get('/student/results/academic-years');
     return response.data;
   } catch (error) {
     console.error("Error fetching academic years:", error);

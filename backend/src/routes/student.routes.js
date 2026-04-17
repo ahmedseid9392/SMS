@@ -19,4 +19,5 @@ router.get("/:id", protect, getStudentById);
 router.put("/:id", protect, updateStudent);
 router.delete("/:id", protect, deleteStudent);
 
+
 export default router;
