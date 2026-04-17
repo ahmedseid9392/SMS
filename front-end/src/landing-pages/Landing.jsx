@@ -2,7 +2,7 @@ import React from "react";
 import ThemeToggle from "./ThemeToggle";
 import { FaFacebookF, FaTwitter, FaInstagram, FaLinkedinIn, FaGraduationCap, FaChalkboardTeacher, FaUsers, FaUserCheck, FaArrowRight } from "react-icons/fa";
 import { MdDashboard, MdSchool } from "react-icons/md";
-import logo from "../assets/react.svg";
+//import logo from "../assets/react.svg";
 import heroImage from "../assets/images/office-buildings-trees.jpg";
 
 const Landing = () => {
@@ -28,7 +28,7 @@ const Landing = () => {
           <div className="flex items-center space-x-3 group cursor-pointer">
             <div className="relative">
               <img
-                src={logo}
+                src=""
                 alt="School Logo"
                 className="h-12 w-12 object-contain transition-all duration-500 group-hover:scale-110 group-hover:rotate-6"
               />
