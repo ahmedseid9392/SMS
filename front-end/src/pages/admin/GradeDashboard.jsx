@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { getAllGrades, adminReleaseGrades, adminUnlockGrade, getAcademicYears, getCurrentAcademicYear } from "../../api/gradeService";
+import { getAllGrades, adminReleaseGrades, adminUnlockGrade } from "../../api/gradeService";
 import { ArrowLeft, RefreshCw, Download, Filter, ChevronDown, Award, Users, BookOpen, GraduationCap, Lock, Unlock, FileText, TrendingUp, Calendar } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import DeleteConfirmModal from "../../components/ui/DeleteConfirmModal";
 import { generateReportCard } from "../../utils/generateReportCard";
 import React from "react";
+import api from "../../api/axios";
 
 const GradeDashboard = () => {
   const [sections, setSections] = useState({});
@@ -31,37 +32,23 @@ const GradeDashboard = () => {
   const fetchAcademicYears = async () => {
     try {
       setLoading(true);
-      const response = await getAcademicYears();
+      // Direct API call since your backend doesn't have /current endpoint
+      const response = await api.get('/academic-years');
       
-      // Handle different response structures
+      console.log("Academic years response:", response.data);
+      
       let years = [];
       if (response.data && Array.isArray(response.data)) {
         years = response.data;
       } else if (response.data && response.data.data && Array.isArray(response.data.data)) {
         years = response.data.data;
-      } else if (Array.isArray(response)) {
-        years = response;
       } else if (response.data && response.data.academicYears && Array.isArray(response.data.academicYears)) {
         years = response.data.academicYears;
       }
       
       setAcademicYears(years);
       
-      // Get current active academic year
-      const currentYearRes = await getCurrentAcademicYear();
-      
-      // Handle current year response
-      let currentYear = null;
-      if (currentYearRes.data && currentYearRes.data.data) {
-        currentYear = currentYearRes.data.data;
-      } else if (currentYearRes.data) {
-        currentYear = currentYearRes.data;
-      }
-      
-      if (currentYear && currentYear._id) {
-        setSelectedYearId(currentYear._id);
-        setSelectedYear(currentYear);
-      } else if (years.length > 0) {
+      if (years.length > 0) {
         // Find active year or use first
         const activeYear = years.find(y => y.isActive === true);
         const defaultYear = activeYear || years[0];
@@ -71,7 +58,6 @@ const GradeDashboard = () => {
     } catch (error) {
       console.error("Failed to fetch academic years:", error);
       toast.error("Failed to load academic years");
-      // Set empty array to avoid map error
       setAcademicYears([]);
     } finally {
       setLoading(false);

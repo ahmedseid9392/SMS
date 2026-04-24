@@ -761,35 +761,42 @@ export const getGradesForClass = async (req, res) => {
   try {
     const { classId } = req.params;
     const { academicYearId } = req.query;
-
-    if (!classId) {
-      return res.status(400).json({ message: "Class ID is required" });
-    }
-
-    let query = {
-      teacher: req.user.id,
+    const teacherId = req.user.id;
+    
+    console.log("getGradesForClass called with:", { classId, academicYearId, teacherId });
+    
+    // Build query
+    let query = { 
       course: classId,
+      teacher: teacherId
     };
-
-    if (academicYearId) {
-      const academicYear = await AcademicYear.findById(academicYearId);
-      if (academicYear) {
-        query["academicYear.year"] = academicYear.ethiopianYear;
-      }
-    } else {
-      // Get active academic year
-      const activeYear = await AcademicYear.findOne({ isActive: true });
-      if (activeYear) {
-        query["academicYear.year"] = activeYear.ethiopianYear;
+    
+    // Only add academicYear filter if it's a valid ObjectId
+    if (academicYearId && academicYearId !== 'default' && academicYearId !== 'null' && academicYearId !== '') {
+      // Check if it's a valid ObjectId
+      const isValidObjectId = mongoose.Types.ObjectId.isValid(academicYearId);
+      if (isValidObjectId) {
+        query['academicYear._id'] = academicYearId;
       }
     }
-
-    const grades = await Grade.find(query).populate("student");
-
-    res.status(200).json({ success: true, grades });
+    
+    const grades = await Grade.find(query)
+      .populate('student', 'fullName username grade section stream')
+      .populate('course', 'name');
+    
+    console.log("Found grades:", grades.length);
+    
+    res.status(200).json({ 
+      success: true, 
+      grades: grades 
+    });
   } catch (err) {
     console.error("Load Grades Error:", err);
-    res.status(500).json({ message: "Server Error" });
+    res.status(500).json({ 
+      success: false, 
+      message: "Server Error", 
+      error: err.message 
+    });
   }
 };
 // Updated getStudentSemesterTotals with academic year

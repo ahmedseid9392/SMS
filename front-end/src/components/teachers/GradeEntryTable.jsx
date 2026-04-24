@@ -75,110 +75,93 @@ export default function GradeEntryTable({ selectedClass, weights: initialWeights
     fetchAcademicYears();
   }, []);
 
-  const fetchAcademicYears = async () => {
+ const fetchAcademicYears = async () => {
+  try {
+    const response = await getAcademicYears();
+    
+    // Handle different response structures
+    let years = [];
+    if (response.data && Array.isArray(response.data)) {
+      years = response.data;
+    } else if (response.data && response.data.data && Array.isArray(response.data.data)) {
+      years = response.data.data;
+    } else if (Array.isArray(response)) {
+      years = response;
+    } else if (response.data && response.data.academicYears && Array.isArray(response.data.academicYears)) {
+      years = response.data.academicYears;
+    }
+    
+    setAcademicYears(years);
+    
+    // Get current active academic year
     try {
-      const response = await getAcademicYears();
-      let years = [];
-      if (response.data && Array.isArray(response.data)) {
-        years = response.data;
-      } else if (response.data && response.data.data && Array.isArray(response.data.data)) {
-        years = response.data.data;
-      } else if (Array.isArray(response)) {
-        years = response;
-      }
-      
-      setAcademicYears(years);
-      
       const currentYearRes = await getCurrentAcademicYear();
       const currentYear = currentYearRes.data || currentYearRes;
-      setAcademicYear(currentYear);
-      setSelectedYearId(currentYear?._id || (years[0]?._id || ""));
-    } catch (error) {
-      console.error("Error fetching academic years:", error);
-      setAcademicYears([]);
-      setSelectedYearId("default");
-    }
-  };
-
-  const loadGrades = async () => {
-    if (!selectedClass || !selectedClass.classInfo?.courseId) {
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const response = await getGradesForClass(
-        selectedClass.classInfo.courseId,
-        selectedYearId
-      );
       
-      let savedGrades = [];
-      if (response.grades) {
-        savedGrades = response.grades;
-      } else if (response.data?.grades) {
-        savedGrades = response.data.grades;
-      } else if (Array.isArray(response)) {
-        savedGrades = response;
-      }
-      
-      const loaded = {};
-      const submittedMap = {};
-      
-      students.forEach(student => {
-        loaded[student._id] = {
-          mid: "",
-          quiz: "",
-          assignment: "",
-          final: "",
-          total: 0,
-          isSubmitted: false,
-          isDraft: false,
-        };
-        submittedMap[student._id] = false;
-      });
-      
-      for (const gradeRecord of savedGrades) {
-        const studentId = gradeRecord.student?._id || gradeRecord.student;
-        const semKey = selectedSemester === 1 ? "sem1" : "sem2";
-        
-        if (gradeRecord[semKey] && gradeRecord[semKey].locked === true) {
-          loaded[studentId] = {
-            mid: gradeRecord[semKey].mid ?? "",
-            quiz: gradeRecord[semKey].quiz ?? "",
-            assignment: gradeRecord[semKey].assignment ?? "",
-            final: gradeRecord[semKey].final ?? "",
-            total: gradeRecord[semKey].total ?? 0,
-            isSubmitted: true,
-            isDraft: false,
-          };
-          submittedMap[studentId] = true;
-        } 
-        else if (gradeRecord.draft && gradeRecord.draft.semester === selectedSemester) {
-          loaded[studentId] = {
-            mid: gradeRecord.draft.mid ?? "",
-            quiz: gradeRecord.draft.quiz ?? "",
-            assignment: gradeRecord.draft.assignment ?? "",
-            final: gradeRecord.draft.final ?? "",
-            total: gradeRecord.draft.total ?? 0,
-            isSubmitted: false,
-            isDraft: true,
-          };
-          submittedMap[studentId] = false;
+      if (currentYear && currentYear._id) {
+        setSelectedYearId(currentYear._id);
+        setAcademicYear(currentYear);
+      } else if (years.length > 0) {
+        // Find active year or use first
+        const activeYear = years.find(y => y.isActive === true);
+        const defaultYear = activeYear || years[0];
+        if (defaultYear && defaultYear._id) {
+          setSelectedYearId(defaultYear._id);
+          setAcademicYear(defaultYear);
         }
+      } else {
+        // No academic years found - set to null
+        setSelectedYearId(null);
+        setAcademicYear(null);
       }
-      
-      setGrades(loaded);
-      setSubmitted(submittedMap);
-      
     } catch (err) {
-      console.error("LOAD ERROR:", err);
-      toast.error("Failed to load saved grades");
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+      console.log("Error getting current year, using first year");
+      if (years.length > 0 && years[0]._id) {
+        setSelectedYearId(years[0]._id);
+        setAcademicYear(years[0]);
+      } else {
+        setSelectedYearId(null);
+        setAcademicYear(null);
+      }
     }
-  };
+  } catch (error) {
+    console.error("Error fetching academic years:", error);
+    toast.error("Failed to load academic year");
+    setAcademicYears([]);
+    setSelectedYearId(null);
+    setAcademicYear(null);
+  }
+};
+const loadGrades = async () => {
+  if (!selectedClass || !selectedClass.classInfo?.courseId) {
+    setLoading(false);
+    return;
+  }
+  
+  // Don't load grades if no valid academic year ID
+  if (!selectedYearId || selectedYearId === 'default' || selectedYearId === 'null') {
+    console.log("No valid academic year selected");
+    setLoading(false);
+    return;
+  }
+  
+  setLoading(true);
+  try {
+    console.log("Loading grades for course:", selectedClass.classInfo.courseId);
+    console.log("Academic Year ID:", selectedYearId);
+    
+    const response = await getGradesForClass(
+      selectedClass.classInfo.courseId,
+      selectedYearId
+    );
+    
+    // Rest of the code...
+  } catch (err) {
+    console.error("LOAD ERROR:", err);
+    toast.error("Failed to load saved grades");
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     if (selectedClass && selectedYearId) {

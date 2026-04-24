@@ -30,6 +30,7 @@ import AttendanceView from "../pages/student/Attendance";
 import ParentDashboard from "../pages/parent/Dashboard";
 import ProfileSettings from "../pages/admin/ProfileSettings";
 import Profile from "../pages/Profile";
+import AcademicYearManagement from "../pages/admin/AcademicYearManagement";
 
 import StudentPayments from "../pages/student/StudentPayments";
 import ParentPayments from "../pages/parent/ParentPayments";
@@ -167,7 +168,7 @@ const AppRoutes = () => (
 
   <Route path="/admin/profile-settings" element={<ProfileSettings />} />
   <Route path="/profile" element={<ProfileSettings />} />    
-
+<Route path="/admin/academic-years" element={<AcademicYearManagement />} />
       {/* Teacher */}
       <Route
         path="/teacher"

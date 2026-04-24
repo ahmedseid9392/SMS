@@ -1,33 +1,32 @@
 import express from 'express';
 import {
   getAcademicYears,
-  getCurrentAcademicYear,
   getAcademicYearById,
   createAcademicYear,
   updateAcademicYear,
   setActiveAcademicYear,
   deleteAcademicYear,
-  toggleSemester
+  toggleSemester,
+  getCurrentAcademicYear,
+  getGradingSettings,
+  updateGradingSettings
 } from '../controllers/academicYear.controller.js';
-import  protect  from '../middleware/auth.middleware.js';
+import protect from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
-// All routes require authentication
-router.use(protect);
+// Academic Year routes
+router.get('/', protect, getAcademicYears);
+router.get('/:id', protect, getAcademicYearById);
+router.post('/', protect, createAcademicYear);
+router.put('/:id', protect, updateAcademicYear);
+router.get('/current', protect, getCurrentAcademicYear);
+router.put('/:id/activate', protect, setActiveAcademicYear);
+router.delete('/:id', protect, deleteAcademicYear);
+router.put('/:id/semester/:semester/toggle', protect, toggleSemester);
 
-// Admin only routes
-//router.use(authorize('ADMIN'));
-
-router.get('/', getAcademicYears);
-router.get('/current', getCurrentAcademicYear);
-router.get('/:id', getAcademicYearById);
-
-// Admin only routes
-router.post('/', createAcademicYear);
-router.put('/:id', updateAcademicYear);
-router.put('/:id/activate', setActiveAcademicYear);
-router.delete('/:id', deleteAcademicYear);
-router.put('/:id/semester/:semester/toggle', toggleSemester);
+// Grading Settings routes
+router.get('/grading-settings', protect, getGradingSettings);
+router.put('/grading-settings', protect, updateGradingSettings);
 
 export default router;
