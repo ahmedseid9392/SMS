@@ -23,6 +23,7 @@ const Sidebar = () => {
     { to: "/admin/classes", label: "Classes", icon: GraduationCap, color: "from-yellow-500 to-orange-500" },
     { to: "/admin/grades", label: "Grade", icon: ClipboardList, color: "from-red-500 to-pink-500" },
     { to: "/admin/payments", label: "Payments", icon: CreditCard, color: "from-green-500 to-emerald-500" },
+    { to: "/admin/academic-years", label: "Academic Years", icon: Calendar, color: "from-teal-500 to-cyan-500" },
   ];
 
   const teacherLinks = [

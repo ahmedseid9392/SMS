@@ -9,11 +9,20 @@ export const getCurrentAcademicYear = async () => {
 
 export const getAcademicYears = async () => {
   try {
-    const response = await api.get('/academic-years');  // Remove '/all'
-    return response;
+    const response = await api.get('/academic-years');
+    // Ensure we always return an array
+    let years = [];
+    if (response.data && Array.isArray(response.data)) {
+      years = response.data;
+    } else if (response.data && response.data.data && Array.isArray(response.data.data)) {
+      years = response.data.data;
+    } else if (Array.isArray(response)) {
+      years = response;
+    }
+    return { data: years };
   } catch (error) {
     console.error("Error fetching academic years:", error);
-    throw error;
+    return { data: [] };
   }
 };
 export const createAcademicYear = async (data) => {

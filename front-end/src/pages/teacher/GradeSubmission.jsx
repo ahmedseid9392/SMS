@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getAssignedStudents, getGradingSetting } from "../../api/gradeService";
+import { getAssignedStudents, getGradingSetting, getSemester1SubmissionStatus } from "../../api/gradeService";
 import GradeEntryTable from "../../components/teachers/GradeEntryTable";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, BookOpen, Users, GraduationCap, Layers, CheckCircle, RefreshCw, ChevronRight, ClipboardList } from "lucide-react";
@@ -10,7 +10,7 @@ export default function GradeSubmission() {
   const [selectedClass, setSelectedClass] = useState(null);
   const [weights, setWeights] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+  const [academicYearId, setAcademicYearId] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -25,6 +25,13 @@ export default function GradeSubmission() {
 
       setClasses(studentsRes.data || []);
       setWeights(weightRes.data?.setting || null);
+      
+      // Get current academic year from URL or context
+      // For now, use a default or get from localStorage
+      const savedYearId = localStorage.getItem("currentAcademicYearId");
+      if (savedYearId) {
+        setAcademicYearId(savedYearId);
+      }
       
       if (studentsRes.data?.length === 0) {
         toast.error("No classes assigned to you");
@@ -51,34 +58,39 @@ export default function GradeSubmission() {
     setSelectedClass(null);
   };
 
-  // Add this button to check submission status
-const handleCheckStatus = async () => {
-  if (!selectedClass) return;
-  
-  try {
-    const response = await getSemester1SubmissionStatus(
-      selectedClass.classInfo.courseId,
-      selectedYearId
-    );
-    
-    const { allCompleted, submittedCount, totalStudents, students } = response.data;
-    
-    if (allCompleted) {
-      toast.success(`✅ All ${totalStudents} students have submitted Semester 1 grades!`);
-    } else {
-      const pendingCount = totalStudents - submittedCount;
-      toast.error(`⚠️ ${pendingCount} student(s) have not submitted Semester 1 grades yet.`);
-      
-      // Show detailed list
-      const pendingStudents = students.filter(s => !s.isSubmitted);
-      console.log("Pending students:", pendingStudents);
+  // Check submission status for the selected class
+  const handleCheckStatus = async () => {
+    if (!selectedClass) {
+      toast.error("Please select a class first");
+      return;
     }
-  } catch (error) {
-    console.error("Error checking status:", error);
-    toast.error("Failed to check submission status");
-  }
-};
-
+    
+    try {
+      const response = await getSemester1SubmissionStatus(
+        selectedClass.classInfo.courseId,
+        academicYearId
+      );
+      
+      const { allCompleted, submittedCount, totalStudents, students } = response.data;
+      
+      if (allCompleted) {
+        toast.success(`✅ All ${totalStudents} students have submitted Semester 1 grades!`);
+      } else {
+        const pendingCount = totalStudents - submittedCount;
+        toast.error(`⚠️ ${pendingCount} student(s) have not submitted Semester 1 grades yet.`);
+        
+        // Show detailed list in console
+        const pendingStudents = students?.filter(s => !s.isSubmitted) || [];
+        console.log("Pending students:", pendingStudents);
+        if (pendingStudents.length > 0) {
+          toast(`Pending: ${pendingStudents.map(s => s.studentName).join(", ")}`, { duration: 5000 });
+        }
+      }
+    } catch (error) {
+      console.error("Error checking status:", error);
+      toast.error("Failed to check submission status");
+    }
+  };
 
   // Calculate statistics
   const totalStudents = classes.reduce((sum, cls) => sum + (cls.students?.length || 0), 0);
@@ -123,24 +135,29 @@ const handleCheckStatus = async () => {
           </div>
         </div>
 
-        <button
-          onClick={handleRefresh}
-          className="px-4 py-2 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2"
-          style={{ 
-            background: "var(--card)", 
-            color: "var(--text)", 
-            border: "1px solid var(--border)" 
-          }}
-        >
-          <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
-          Refresh
-        </button>
-        <button
-  onClick={handleCheckStatus}
-  className="px-4 py-2 rounded-xl bg-purple-600 text-white"
->
-  Check Submission Status
-</button>
+        <div className="flex gap-3">
+          <button
+            onClick={handleRefresh}
+            className="px-4 py-2 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2"
+            style={{ 
+              background: "var(--card)", 
+              color: "var(--text)", 
+              border: "1px solid var(--border)" 
+            }}
+          >
+            <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
+            Refresh
+          </button>
+          
+          {selectedClass && (
+            <button
+              onClick={handleCheckStatus}
+              className="px-4 py-2 rounded-xl bg-purple-600 text-white hover:bg-purple-700 transition-all duration-300 hover:scale-105"
+            >
+              Check Submission Status
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Stats Cards (when no class selected) */}
@@ -302,18 +319,26 @@ const handleCheckStatus = async () => {
                   </div>
                 </div>
                 
-                <button
-                  onClick={handleBack}
-                  className="px-4 py-2 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2"
-                  style={{ 
-                    background: "var(--bg)", 
-                    color: "var(--text)", 
-                    border: "1px solid var(--border)" 
-                  }}
-                >
-                  <ArrowLeft size={18} />
-                  Change Class
-                </button>
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleCheckStatus}
+                    className="px-4 py-2 rounded-xl bg-purple-600 text-white hover:bg-purple-700 transition-all duration-300 hover:scale-105"
+                  >
+                    Check Status
+                  </button>
+                  <button
+                    onClick={handleBack}
+                    className="px-4 py-2 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2"
+                    style={{ 
+                      background: "var(--bg)", 
+                      color: "var(--text)", 
+                      border: "1px solid var(--border)" 
+                    }}
+                  >
+                    <ArrowLeft size={18} />
+                    Change Class
+                  </button>
+                </div>
               </div>
             </div>
             
@@ -325,6 +350,8 @@ const handleCheckStatus = async () => {
                   weights={weights} 
                   onSuccess={() => {
                     toast.success("Grades saved successfully!");
+                    // Refresh the class data after saving
+                    loadData();
                   }}
                 />
               </div>
