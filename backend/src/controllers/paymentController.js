@@ -6,6 +6,22 @@ import StudentPaymentSummary from "../models/StudentPaymentSummary.model.js";
 import Student from "../models/Student.model.js";
 import { createNotification } from "./notificationController.js";
 
+const resolveAccessibleStudent = async (requestUser, studentId) => {
+  if (!studentId) return null;
+
+  if (requestUser.role === "PARENT") {
+    return await Student.findOne({ _id: studentId, parent: requestUser.id });
+  }
+
+  if (requestUser.role === "STUDENT") {
+    return requestUser.id.toString() === studentId.toString()
+      ? await Student.findById(studentId)
+      : null;
+  }
+
+  return await Student.findById(studentId);
+};
+
 // ==================== PAYMENT SETTINGS ====================
 
 // Get current payment settings
@@ -227,18 +243,23 @@ export const getStudentPayments = async (req, res) => {
   try {
     const { studentId } = req.params;
     const { academicYear } = req.query;
+
+    const accessibleStudent = await resolveAccessibleStudent(req.user, studentId);
+    if (!accessibleStudent) {
+      return res.status(403).json({ message: "Access denied" });
+    }
     
     const payments = await Payment.find({
-      student: studentId,
+      student: accessibleStudent._id,
       academicYear: academicYear
     }).sort({ monthIndex: 1 });
     
     const summary = await StudentPaymentSummary.findOne({
-      student: studentId,
+      student: accessibleStudent._id,
       academicYear: academicYear
     });
     
-    const student = await Student.findById(studentId).select('fullName username grade section stream');
+    const student = await Student.findById(accessibleStudent._id).select('fullName username grade section stream');
     
     res.json({
       success: true,
@@ -725,6 +746,10 @@ export const getPaymentAcademicYears = async (req, res) => {
 // Get children for parent (for parent payment view)
 export const getParentChildren = async (req, res) => {
   try {
+    if (req.user.role !== "PARENT") {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
     const parentId = req.user.id;
     const children = await Student.find({ parent: parentId }).select('fullName username grade section stream');
     res.json({ success: true, data: children });

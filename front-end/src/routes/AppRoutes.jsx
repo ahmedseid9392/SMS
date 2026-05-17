@@ -28,6 +28,8 @@ import Notifications from "../pages/student/Notifications";
 import AttendanceView from "../pages/student/Attendance";
 
 import ParentDashboard from "../pages/parent/Dashboard";
+import ParentResults from "../pages/parent/ParentResults";
+import ParentNotifications from "../pages/parent/ParentNotifications";
 import ProfileSettings from "../pages/admin/ProfileSettings";
 import Profile from "../pages/Profile";
 import AcademicYearManagement from "../pages/admin/AcademicYearManagement";
@@ -254,6 +256,22 @@ const AppRoutes = () => (
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/parent/results"
+        element={
+          <ProtectedRoute>
+            <ParentResults />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/parent/notifications"
+        element={
+          <ProtectedRoute>
+            <ParentNotifications />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Common */}
       <Route
@@ -264,12 +282,33 @@ const AppRoutes = () => (
           </ProtectedRoute>
         }
       />
-      <Route path="/student/payments" element={<StudentPayments />} />
-    <Route path="/parent/payments" element={<ParentPayments />}/>
-    <Route path="/admin/payments" element={<AdminPayments />} />
-    <Route path="/payment/success" element={<PaymentSuccess />} />
-<Route path="/payment/failed" element={<PaymentFailed />} />
-<Route path="/mock-payment" element={<MockPaymentSuccess />} />
+      <Route
+        path="/student/payments"
+        element={
+          <ProtectedRoute>
+            <StudentPayments />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/parent/payments"
+        element={
+          <ProtectedRoute>
+            <ParentPayments />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/payments"
+        element={
+          <ProtectedRoute>
+            <AdminPayments />
+          </ProtectedRoute>
+        }
+      />
+      <Route path="/payment/success" element={<PaymentSuccess />} />
+      <Route path="/payment/failed" element={<PaymentFailed />} />
+      <Route path="/mock-payment" element={<MockPaymentSuccess />} />
     </Routes>
   </BrowserRouter>
 );

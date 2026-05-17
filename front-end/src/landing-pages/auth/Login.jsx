@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { useTheme } from "../../context/ThemeContext";
 import ThemeToggle from "../../landing-pages/ThemeToggle";
 import { ArrowLeft, User, Lock, Eye, EyeOff } from "lucide-react";
 import toast from "react-hot-toast";
@@ -13,7 +12,6 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
 
   const { user, login, loading } = useAuth();
-  const { theme } = useTheme();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -198,7 +196,10 @@ const Login = () => {
              style={{ background: "var(--bg)", border: "1px solid var(--border)" }}>
           <p className="font-semibold mb-2">Demo Credentials:</p>
           <p className="opacity-80 font-mono text-xs">
-            Usernames: GVS2018011 | GVS2024001 | GVS2024017 | GVP2018011
+            Usernames: GVA2018011 | GVA2018012 | GVA2018013 | GVP2018014
+          </p>
+          <p className="opacity-80 font-mono text-xs mt-1">
+            Parent Samples: GVP2024001 | GVP2024002 | GVP2024003
           </p>
           <p className="opacity-80 mt-1">
             Default Password: <strong className="text-blue-500">ChangeMe@123</strong>

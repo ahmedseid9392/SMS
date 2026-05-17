@@ -4,6 +4,151 @@ import GradingSetting from "../models/GradingSetting.model.js";
 import Student from "../models/Student.model.js";
 import AcademicYear from "../models/AcademicYear.model.js";
 
+const getParentAccessibleStudent = async (parentId, studentId = null) => {
+  const query = { parent: parentId };
+  if (studentId) {
+    query._id = studentId;
+  }
+  return await Student.findOne(query).select("fullName username grade section stream");
+};
+
+const buildReleasedResultsPayload = async (studentId, semester, academicYearId = null) => {
+  const query = {
+    student: studentId,
+    isReleased: true
+  };
+
+  if (academicYearId && academicYearId !== "default") {
+    query["academicYear._id"] = academicYearId;
+  }
+
+  const grades = await Grade.find(query)
+    .populate("course", "name gradeLevel stream")
+    .populate("teacher", "fullName");
+
+  if (grades.length === 0) {
+    const student = await Student.findById(studentId).select("fullName username grade section stream");
+    return {
+      student: student
+        ? {
+            name: student.fullName,
+            username: student.username,
+            grade: student.grade,
+            section: student.section,
+            stream: student.stream || "",
+          }
+        : null,
+      results: [],
+      summary: {
+        totalScore: "0.00",
+        average: "0",
+        totalCourses: 0,
+        status: "No Results",
+      },
+    };
+  }
+
+  let totalScore = 0;
+  let totalCourses = 0;
+  const courseResults = [];
+
+  for (const grade of grades) {
+    const semKey = semester === "2" ? "sem2" : "sem1";
+    const scores = grade[semKey];
+
+    if (scores && scores.locked) {
+      totalScore += scores.total || 0;
+      totalCourses++;
+
+      courseResults.push({
+        _id: grade._id,
+        courseId: grade.course._id,
+        courseName: grade.course.name,
+        gradeLevel: grade.course.gradeLevel,
+        stream: grade.course.stream,
+        mid: scores.mid || 0,
+        quiz: scores.quiz || 0,
+        assignment: scores.assignment || 0,
+        final: scores.final || 0,
+        total: scores.total || 0,
+        status: (scores.total || 0) >= 50 ? "Pass" : "Fail",
+      });
+    }
+  }
+
+  const average = totalCourses > 0 ? (totalScore / totalCourses).toFixed(2) : 0;
+  const overallStatus = average >= 50 ? "Pass" : "Fail";
+  const student = await Student.findById(studentId).select("fullName username grade section stream");
+
+  return {
+    student: {
+      name: student.fullName,
+      username: student.username,
+      grade: student.grade,
+      section: student.section,
+      stream: student.stream || "",
+    },
+    results: courseResults,
+    summary: {
+      totalScore: totalScore.toFixed(2),
+      average,
+      totalCourses,
+      status: overallStatus,
+    },
+  };
+};
+
+const getAcademicYearsForStudent = async (studentId) => {
+  const grades = await Grade.find({
+    student: studentId,
+    isReleased: true,
+  }).select("academicYear");
+
+  const years = [];
+  const yearMap = new Map();
+
+  for (const grade of grades) {
+    if (grade.academicYear && grade.academicYear._id && !yearMap.has(grade.academicYear._id.toString())) {
+      yearMap.set(grade.academicYear._id.toString(), {
+        _id: grade.academicYear._id,
+        name: grade.academicYear.name || `${grade.academicYear.year} Academic Year`,
+        ethiopianYear: grade.academicYear.ethiopianYear || grade.academicYear.year,
+        gregorianYear: grade.academicYear.gregorianYear || "",
+      });
+      years.push(yearMap.get(grade.academicYear._id.toString()));
+    }
+  }
+
+  if (years.length === 0) {
+    try {
+      const allYears = await AcademicYear.find({}).sort({ createdAt: -1 });
+      for (const year of allYears) {
+        years.push({
+          _id: year._id,
+          name: year.name,
+          ethiopianYear: year.ethiopianYear,
+          gregorianYear: year.gregorianYear,
+        });
+      }
+    } catch (err) {
+      console.log("AcademicYear fallback error:", err.message);
+    }
+  }
+
+  if (years.length === 0) {
+    const currentYear = new Date().getFullYear();
+    const ethiopianYear = currentYear - 8;
+    years.push({
+      _id: "default",
+      name: `${ethiopianYear} EC - ${ethiopianYear + 1} EC`,
+      ethiopianYear: `${ethiopianYear} EC`,
+      gregorianYear: `${currentYear}/${currentYear + 1}`,
+    });
+  }
+
+  return years;
+};
+
 // Get current active academic year
 export const getCurrentAcademicYear = async (req, res) => {
   try {
@@ -590,8 +735,8 @@ export const getAllGrades = async (req, res) => {
 export const getParentGrades = async (req, res) => {
   try {
     const parentId = req.user.id;
-
-    const student = await Student.findOne({ parent: parentId });
+    const { studentId } = req.query;
+    const student = await getParentAccessibleStudent(parentId, studentId);
 
     if (!student) return res.status(404).json({ message: "Student not found" });
 
@@ -1056,99 +1201,8 @@ export const getStudentReleasedResults = async (req, res) => {
   try {
     const studentId = req.user.id;
     const { academicYearId, semester } = req.query;
-    
-    console.log("Fetching results for student:", studentId);
-    console.log("Academic Year ID:", academicYearId);
-    console.log("Semester:", semester);
-    
-    // Find all grades for the student
-    let query = { 
-      student: studentId,
-      isReleased: true  // Only show released grades
-    };
-    
-    const grades = await Grade.find(query)
-      .populate('course', 'name gradeLevel stream')
-      .populate('teacher', 'fullName');
-    
-    console.log("Found grades:", grades.length);
-    
-    // If no grades found, return empty results
-    if (grades.length === 0) {
-      // Get student info
-      const student = await Student.findById(studentId).select('fullName username grade section stream');
-      
-      return res.json({
-        success: true,
-        student: student ? {
-          name: student.fullName,
-          username: student.username,
-          grade: student.grade,
-          section: student.section,
-          stream: student.stream || ''
-        } : null,
-        results: [],
-        summary: {
-          totalScore: "0.00",
-          average: "0",
-          totalCourses: 0,
-          status: "No Results"
-        }
-      });
-    }
-    
-    // Calculate statistics
-    let totalScore = 0;
-    let totalCourses = 0;
-    const courseResults = [];
-    
-    for (const grade of grades) {
-      const semKey = semester === '2' ? 'sem2' : 'sem1';
-      const scores = grade[semKey];
-      
-      if (scores && scores.locked) {
-        totalScore += scores.total || 0;
-        totalCourses++;
-        
-        courseResults.push({
-          courseId: grade.course._id,
-          courseName: grade.course.name,
-          gradeLevel: grade.course.gradeLevel,
-          stream: grade.course.stream,
-          mid: scores.mid || 0,
-          quiz: scores.quiz || 0,
-          assignment: scores.assignment || 0,
-          final: scores.final || 0,
-          total: scores.total || 0,
-          status: (scores.total || 0) >= 50 ? "Pass" : "Fail"
-        });
-      }
-    }
-    
-    const average = totalCourses > 0 ? (totalScore / totalCourses).toFixed(2) : 0;
-    const overallStatus = average >= 50 ? "Pass" : "Fail";
-    
-    // Get student info
-    const student = await Student.findById(studentId).select('fullName username grade section stream');
-    
-    res.json({
-      success: true,
-      student: {
-        name: student.fullName,
-        username: student.username,
-        grade: student.grade,
-        section: student.section,
-        stream: student.stream || ''
-      },
-      results: courseResults,
-      summary: {
-        totalScore: totalScore.toFixed(2),
-        average: average,
-        totalCourses: totalCourses,
-        status: overallStatus
-      }
-    });
-    
+    const payload = await buildReleasedResultsPayload(studentId, semester, academicYearId);
+    res.json({ success: true, ...payload });
   } catch (error) {
     console.error("Error fetching student results:", error);
     res.status(500).json({ 
@@ -1162,69 +1216,8 @@ export const getStudentReleasedResults = async (req, res) => {
 export const getStudentAcademicYears = async (req, res) => {
   try {
     const studentId = req.user.id;
-    
-    console.log("Fetching academic years for student:", studentId);
-    
-    // Try to get from Grade model with academicYear embedded
-    let grades = await Grade.find({ 
-      student: studentId,
-      isReleased: true 
-    }).select('academicYear');
-    
-    console.log("Grades found:", grades.length);
-    
-    const years = [];
-    const yearMap = new Map();
-    
-    for (const grade of grades) {
-      if (grade.academicYear && grade.academicYear._id && !yearMap.has(grade.academicYear._id.toString())) {
-        yearMap.set(grade.academicYear._id.toString(), {
-          _id: grade.academicYear._id,
-          name: grade.academicYear.name || `${grade.academicYear.year} Academic Year`,
-          ethiopianYear: grade.academicYear.ethiopianYear || grade.academicYear.year,
-          gregorianYear: grade.academicYear.gregorianYear || ''
-        });
-        years.push(yearMap.get(grade.academicYear._id.toString()));
-      }
-    }
-    
-    // If no academic years found in grades, try to get from AcademicYear model
-    if (years.length === 0) {
-      try {
-        // Import AcademicYear model dynamically or require it
-        const AcademicYear = mongoose.model('AcademicYear');
-        const allYears = await AcademicYear.find({}).sort({ createdAt: -1 });
-        
-        for (const year of allYears) {
-          years.push({
-            _id: year._id,
-            name: year.name,
-            ethiopianYear: year.ethiopianYear,
-            gregorianYear: year.gregorianYear
-          });
-        }
-      } catch (err) {
-        console.log("AcademicYear model not found or no data:", err.message);
-        // If no AcademicYear model, return some default years
-        const currentYear = new Date().getFullYear();
-        const ethiopianYear = currentYear - 8;
-        
-        years.push({
-          _id: 'default',
-          name: `${ethiopianYear} EC - ${ethiopianYear + 1} EC`,
-          ethiopianYear: `${ethiopianYear} EC`,
-          gregorianYear: `${currentYear}/${currentYear + 1}`
-        });
-      }
-    }
-    
-    console.log("Academic years found:", years.length);
-    
-    res.json({
-      success: true,
-      academicYears: years
-    });
-    
+    const years = await getAcademicYearsForStudent(studentId);
+    res.json({ success: true, academicYears: years });
   } catch (error) {
     console.error("Error fetching academic years:", error);
     res.status(500).json({ 
@@ -1232,6 +1225,42 @@ export const getStudentAcademicYears = async (req, res) => {
       message: "Failed to fetch academic years", 
       error: error.message 
     });
+  }
+};
+
+export const getParentReleasedResults = async (req, res) => {
+  try {
+    const parentId = req.user.id;
+    const { studentId, academicYearId, semester } = req.query;
+
+    const student = await getParentAccessibleStudent(parentId, studentId);
+    if (!student) {
+      return res.status(404).json({ success: false, message: "Student not found" });
+    }
+
+    const payload = await buildReleasedResultsPayload(student._id, semester, academicYearId);
+    res.json({ success: true, ...payload });
+  } catch (error) {
+    console.error("Error fetching parent released results:", error);
+    res.status(500).json({ success: false, message: "Failed to fetch parent results", error: error.message });
+  }
+};
+
+export const getParentAcademicYears = async (req, res) => {
+  try {
+    const parentId = req.user.id;
+    const { studentId } = req.query;
+
+    const student = await getParentAccessibleStudent(parentId, studentId);
+    if (!student) {
+      return res.status(404).json({ success: false, message: "Student not found" });
+    }
+
+    const years = await getAcademicYearsForStudent(student._id);
+    res.json({ success: true, academicYears: years });
+  } catch (error) {
+    console.error("Error fetching parent academic years:", error);
+    res.status(500).json({ success: false, message: "Failed to fetch parent academic years", error: error.message });
   }
 };
 // Request grade review

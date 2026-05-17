@@ -1,103 +1,104 @@
 import React from "react";
 import ThemeToggle from "./ThemeToggle";
-import { FaFacebookF, FaTwitter, FaInstagram, FaLinkedinIn, FaGraduationCap, FaChalkboardTeacher, FaUsers, FaUserCheck, FaArrowRight } from "react-icons/fa";
-import { MdDashboard, MdSchool } from "react-icons/md";
-//import logo from "../assets/react.svg";
+import {
+  FaFacebookF,
+  FaTwitter,
+  FaInstagram,
+  FaLinkedinIn,
+  FaGraduationCap,
+  FaChalkboardTeacher,
+  FaUsers,
+  FaArrowRight,
+} from "react-icons/fa";
+import { MdDashboard } from "react-icons/md";
 import heroImage from "../assets/images/office-buildings-trees.jpg";
 
 const Landing = () => {
   return (
     <div
       style={{
-        background: "var(--bg)",
+        background: "transparent",
         color: "var(--text)",
       }}
       className="min-h-screen overflow-x-hidden transition-all duration-500"
     >
-      {/* NAVBAR - Glass morphism effect */}
-      <nav
-        className="py-4 fixed top-0 left-0 right-0 z-50 backdrop-blur-lg transition-all duration-500"
-        style={{ 
-          background: "var(--card)", 
-          borderBottom: "1px solid var(--border)",
-          boxShadow: "0 4px 30px rgba(0, 0, 0, 0.1)"
-        }}
-      >
-        <div className="container mx-auto px-6 flex justify-between items-center">
-
-          <div className="flex items-center space-x-3 group cursor-pointer">
-            <div className="relative">
-              <img
-                src=""
-                alt="School Logo"
-                className="h-12 w-12 object-contain transition-all duration-500 group-hover:scale-110 group-hover:rotate-6"
-              />
-              <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+      <nav className="fixed left-0 right-0 top-0 z-50 py-4 transition-all duration-500">
+        <div className="mx-auto max-w-7xl px-4 md:px-6">
+          <div className="glass-panel flex items-center justify-between rounded-[1.8rem] px-4 py-3 md:px-6">
+            <div className="flex items-center space-x-3 group cursor-pointer">
+              <div
+                className="flex h-12 w-12 items-center justify-center rounded-2xl text-white shadow-lg"
+                style={{ background: "linear-gradient(135deg, var(--primary), #0ea5e9)" }}
+              >
+                <FaGraduationCap size={22} />
+              </div>
+              <div>
+                <h1 className="section-title text-lg font-semibold md:text-2xl">Green Valley High School</h1>
+                <p className="text-muted hidden text-xs md:block">A modern academic management platform</p>
+              </div>
             </div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent group-hover:opacity-80 transition-all duration-300">
-              Green Valley High School
-            </h1>
-          </div>
 
-          <div className="flex items-center gap-4">
-            <ThemeToggle />
+            <div className="flex items-center gap-4">
+              <ThemeToggle />
 
-            <a
-              href="/login"
-              className="px-6 py-2.5 rounded-full font-semibold transition-all duration-300
-                         shadow-lg hover:shadow-xl hover:scale-105 relative overflow-hidden group"
-              style={{
-                background: "linear-gradient(135deg, var(--text) 0%, var(--text) 100%)",
-                color: "var(--bg)",
-              }}
-            >
-              <span className="relative z-10">Login</span>
-              <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
-            </a>
+              <a
+                href="/login"
+                className="inline-flex items-center gap-2 rounded-full px-6 py-3 font-semibold transition-all duration-300 hover:-translate-y-0.5"
+                style={{
+                  background: "linear-gradient(135deg, var(--primary), var(--primary-strong))",
+                  color: "#fff",
+                  boxShadow: "var(--shadow-sm)",
+                }}
+              >
+                <span>Login</span>
+                <FaArrowRight className="text-sm" />
+              </a>
+            </div>
           </div>
         </div>
       </nav>
 
-      {/* HERO SECTION - Modern gradient + animated elements */}
-      <section className="pt-32 pb-20 relative overflow-hidden">
-        {/* Animated background blobs */}
-        <div className="absolute top-20 -left-20 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-20 -right-20 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        
-        <div className="container mx-auto px-6 flex flex-col md:flex-row items-center relative z-10">
-          <div className="md:w-1/2 mb-8 md:mb-0 animate-fadeIn">
-            <div className="inline-block px-4 py-2 rounded-full text-sm font-semibold mb-6"
-                 style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
-              🎓 Since 1995
+      <section className="relative overflow-hidden pb-20 pt-36 md:pb-28 md:pt-40">
+        <div
+          className="absolute top-20 -left-20 h-96 w-96 rounded-full blur-3xl animate-pulse"
+          style={{ background: "rgba(37, 99, 235, 0.16)" }}
+        ></div>
+        <div
+          className="absolute bottom-20 -right-20 h-96 w-96 rounded-full blur-3xl animate-pulse delay-1000"
+          style={{ background: "rgba(14, 165, 233, 0.14)" }}
+        ></div>
+
+        <div className="relative z-10 mx-auto flex max-w-7xl flex-col items-center gap-12 px-6 md:flex-row">
+          <div className="mb-8 md:mb-0 md:w-1/2 animate-fadeIn">
+            <div className="glass-panel mb-6 inline-flex items-center rounded-full px-4 py-2 text-sm font-semibold">
+              Since 1995
             </div>
-            <h1 className="text-6xl font-bold mb-6 leading-tight">
+            <h1 className="section-title mb-6 text-5xl font-bold leading-tight md:text-6xl xl:text-7xl">
               Green Valley School <br />
-              <span className="bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">
                 Management System
               </span>
             </h1>
-            <p className="text-xl mb-8 opacity-90 leading-relaxed">
-              A modern digital platform for managing academic and administrative activities with ease and efficiency.
+            <p className="text-muted mb-8 max-w-2xl text-lg leading-relaxed md:text-xl">
+              A polished digital workspace for administrators, teachers, students, and parents to manage school life
+              with clarity, speed, and confidence.
             </p>
 
             <div className="flex gap-4">
               <a
                 href="/login"
-                className="px-8 py-4 rounded-full font-semibold shadow-xl transition-all duration-300
-                           hover:scale-110 hover:shadow-2xl hover:-translate-y-1 relative overflow-hidden group"
-                style={{ background: "linear-gradient(135deg, #3b82f6, #8b5cf6)", color: "white" }}
+                className="group inline-flex items-center gap-2 rounded-full px-8 py-4 font-semibold transition-all duration-300 hover:-translate-y-1"
+                style={{ background: "linear-gradient(135deg, var(--primary), #0ea5e9)", color: "white", boxShadow: "var(--shadow-md)" }}
               >
                 <span className="relative z-10 flex items-center gap-2">
-                  Get Started <FaArrowRight className="group-hover:translate-x-1 transition-transform" />
+                  Get Started <FaArrowRight className="transition-transform group-hover:translate-x-1" />
                 </span>
-                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
               </a>
-              
+
               <a
                 href="#features"
-                className="px-8 py-4 rounded-full font-semibold transition-all duration-300
-                           hover:scale-105 border-2"
-                style={{ borderColor: "var(--border)", color: "var(--text)" }}
+                className="glass-panel rounded-full px-8 py-4 font-semibold transition-all duration-300 hover:-translate-y-0.5"
+                style={{ color: "var(--text)" }}
               >
                 Learn More
               </a>
@@ -105,55 +106,65 @@ const Landing = () => {
           </div>
 
           <div className="md:w-1/2">
-            <div className="relative group">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl blur-2xl opacity-50 group-hover:opacity-75 transition-opacity duration-500"></div>
+            <div className="group relative">
+              <div className="glass-panel absolute -inset-5 rounded-[2rem] opacity-70"></div>
               <img
                 src={heroImage}
                 alt="School Management"
-                className="w-full rounded-xl shadow-2xl transition-all duration-700 
-                           group-hover:scale-105 group-hover:-rotate-1 relative z-10"
+                className="relative z-10 w-full rounded-[1.8rem] shadow-2xl transition-all duration-700 group-hover:scale-[1.02]"
               />
             </div>
           </div>
         </div>
       </section>
 
-      {/* FEATURES - With icons and hover cards */}
       <section id="features" className="py-20">
-        <div className="container mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-5xl font-bold mb-4 bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
-              System Features
-            </h2>
-            <p className="text-xl opacity-75">Everything you need to manage your school efficiently</p>
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="mb-16 text-center">
+            <h2 className="section-title mb-4 text-4xl font-bold md:text-5xl">System Features</h2>
+            <p className="text-muted text-lg md:text-xl">Everything you need to manage your school efficiently</p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid gap-8 md:grid-cols-3">
             {[
-              { title: "Student Management", desc: "Manage students, grades, attendance, ID cards & more.", icon: FaGraduationCap, color: "from-blue-500 to-cyan-500" },
-              { title: "Teacher Portal", desc: "Teachers manage classes, assignments and attendance.", icon: FaChalkboardTeacher, color: "from-purple-500 to-pink-500" },
-              { title: "Parent Dashboard", desc: "Parents can monitor grades, attendance & daily activities.", icon: FaUsers, color: "from-green-500 to-emerald-500" },
+              {
+                title: "Student Management",
+                desc: "Manage students, grades, attendance, ID cards, and performance records from one workspace.",
+                icon: FaGraduationCap,
+                color: "from-blue-500 to-cyan-500",
+              },
+              {
+                title: "Teacher Portal",
+                desc: "Let teachers manage classes, assignments, results, and classroom routines with less friction.",
+                icon: FaChalkboardTeacher,
+                color: "from-sky-500 to-blue-600",
+              },
+              {
+                title: "Parent Dashboard",
+                desc: "Give parents clear visibility into attendance, progress, and school communication.",
+                icon: FaUsers,
+                color: "from-emerald-500 to-teal-500",
+              },
             ].map((feature, index) => (
               <div
                 key={index}
-                className="group p-8 rounded-2xl shadow-xl transition-all duration-500
-                           hover:-translate-y-4 hover:shadow-2xl cursor-pointer relative overflow-hidden"
-                style={{
-                  background: "var(--card)",
-                  border: "1px solid var(--border)",
-                }}
+                className="surface-card group relative cursor-pointer overflow-hidden rounded-[1.8rem] p-8 transition-all duration-500 hover:-translate-y-3"
               >
-                <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${feature.color} rounded-full blur-3xl opacity-0 group-hover:opacity-20 transition-opacity duration-500`}></div>
-                
-                <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
-                  <feature.icon className="text-white text-3xl" />
+                <div
+                  className={`absolute right-0 top-0 h-32 w-32 rounded-full bg-gradient-to-br ${feature.color} blur-3xl opacity-0 transition-opacity duration-500 group-hover:opacity-20`}
+                ></div>
+
+                <div
+                  className={`mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br ${feature.color} transition-transform duration-300 group-hover:scale-110`}
+                >
+                  <feature.icon className="text-3xl text-white" />
                 </div>
-                
-                <h3 className="text-2xl font-semibold mb-4">{feature.title}</h3>
-                <p className="opacity-70 leading-relaxed">{feature.desc}</p>
-                
-                <div className="mt-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <span className="text-blue-500 font-semibold flex items-center gap-2">
+
+                <h3 className="mb-4 text-2xl font-semibold">{feature.title}</h3>
+                <p className="text-muted leading-relaxed">{feature.desc}</p>
+
+                <div className="mt-6 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                  <span className="flex items-center gap-2 font-semibold" style={{ color: "var(--primary)" }}>
                     Learn more <FaArrowRight className="text-sm" />
                   </span>
                 </div>
@@ -163,101 +174,104 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* ROLES - Modern card design with counters */}
-      <section className="py-20 relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-blue-500/5 to-transparent"></div>
-        
-        <div className="container mx-auto px-6 text-center relative z-10">
-          <h2 className="text-5xl font-bold mb-6">Who Can Use This System?</h2>
-          <p className="text-xl opacity-75 mb-12">Tailored portals for every role in the education ecosystem</p>
+      <section className="relative py-20">
+        <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, transparent, rgba(37,99,235,0.05), transparent)" }}></div>
 
-          <div className="grid md:grid-cols-4 gap-6">
+        <div className="container relative z-10 mx-auto px-6 text-center">
+          <h2 className="section-title mb-6 text-4xl font-bold md:text-5xl">Who Can Use This System?</h2>
+          <p className="text-muted mb-12 text-lg md:text-xl">Tailored portals for every role in the education ecosystem</p>
+
+          <div className="grid gap-6 md:grid-cols-4">
             {[
               { name: "Administrators", icon: MdDashboard, count: "Full Control", gradient: "from-red-500 to-orange-500" },
               { name: "Teachers", icon: FaChalkboardTeacher, count: "Manage Classes", gradient: "from-blue-500 to-cyan-500" },
               { name: "Students", icon: FaGraduationCap, count: "Access Learning", gradient: "from-green-500 to-emerald-500" },
-              { name: "Parents", icon: FaUsers, count: "Monitor Progress", gradient: "from-purple-500 to-pink-500" },
+              { name: "Parents", icon: FaUsers, count: "Monitor Progress", gradient: "from-slate-500 to-sky-500" },
             ].map((role, index) => (
               <div
                 key={index}
-                className="group p-8 rounded-2xl transition-all duration-500 
-                           hover:scale-105 hover:-translate-y-2 cursor-pointer relative overflow-hidden"
-                style={{
-                  background: "var(--card)",
-                  border: "2px solid var(--border)",
-                }}
+                className="surface-card group relative cursor-pointer overflow-hidden rounded-[1.8rem] p-8 transition-all duration-500 hover:-translate-y-2"
               >
-                <div className={`absolute inset-0 bg-gradient-to-br ${role.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-500`}></div>
-                
-                <div className={`w-20 h-20 rounded-full bg-gradient-to-br ${role.gradient} flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300`}>
-                  <role.icon className="text-white text-3xl" />
+                <div className={`absolute inset-0 bg-gradient-to-br ${role.gradient} opacity-0 transition-opacity duration-500 group-hover:opacity-10`}></div>
+
+                <div
+                  className={`mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br ${role.gradient} transition-transform duration-300 group-hover:scale-110`}
+                >
+                  <role.icon className="text-3xl text-white" />
                 </div>
-                
-                <h3 className="text-2xl font-bold mb-2">{role.name}</h3>
-                <p className="text-sm opacity-60 font-semibold">{role.count}</p>
+
+                <h3 className="mb-2 text-2xl font-bold">{role.name}</h3>
+                <p className="text-sm font-semibold text-muted">{role.count}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ABOUT - Enhanced with stats */}
-      <section className="py-20" style={{ background: "var(--card)" }}>
-        <div className="container mx-auto px-6">
-          <div className="text-center mb-12">
-            <h2 className="text-5xl font-bold mb-6 bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
-              About the System
-            </h2>
-            <p className="max-w-3xl mx-auto text-xl opacity-80 leading-relaxed">
-              This School Management System reduces paperwork, improves communication,
-              and provides real-time access to academic information for everyone.
+      <section className="py-20">
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="glass-panel rounded-[2rem] px-6 py-14 md:px-10">
+            <div className="mb-12 text-center">
+              <h2 className="section-title mb-6 text-4xl font-bold md:text-5xl">About the System</h2>
+              <p className="text-muted mx-auto max-w-3xl text-lg leading-relaxed md:text-xl">
+                This School Management System reduces paperwork, improves communication, and provides real-time
+                access to academic information for everyone.
+              </p>
+            </div>
+
+            <div className="mt-12 grid gap-8 md:grid-cols-3">
+              {[
+                { number: "10K+", label: "Active Users" },
+                { number: "99.9%", label: "Uptime" },
+                { number: "24/7", label: "Support" },
+              ].map((stat, i) => (
+                <div
+                  key={i}
+                  className="rounded-[1.5rem] p-6 text-center transition-all duration-300 hover:-translate-y-1"
+                  style={{ border: "1px solid var(--border)", background: "var(--bg-soft)" }}
+                >
+                  <div className="text-4xl font-bold" style={{ color: "var(--primary)" }}>
+                    {stat.number}
+                  </div>
+                  <div className="mt-2 text-lg text-muted">{stat.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer className="py-12">
+        <div className="mx-auto max-w-7xl px-6 text-center">
+          <div className="glass-panel rounded-[1.8rem] px-6 py-10">
+            <div className="mb-8 flex justify-center space-x-6">
+              {[FaFacebookF, FaTwitter, FaInstagram, FaLinkedinIn].map((Icon, i) => (
+                <div
+                  key={i}
+                  className="group flex h-12 w-12 cursor-pointer items-center justify-center rounded-full transition-all duration-300 hover:-translate-y-1 hover:scale-125"
+                  style={{ background: "var(--bg-soft)", border: "1px solid var(--border)" }}
+                >
+                  <Icon size={20} className="transition-transform group-hover:scale-110" />
+                </div>
+              ))}
+            </div>
+
+            <p className="text-muted text-sm">
+              © {new Date().getFullYear()} Green Valley High School Management System.
+              <br className="md:hidden" /> Empowering education through technology.
             </p>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-8 mt-12">
-            {[
-              { number: "10K+", label: "Active Users" },
-              { number: "99.9%", label: "Uptime" },
-              { number: "24/7", label: "Support" },
-            ].map((stat, i) => (
-              <div key={i} className="text-center p-6 rounded-2xl transition-all duration-300 hover:scale-105"
-                   style={{ border: "1px solid var(--border)" }}>
-                <div className="text-4xl font-bold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
-                  {stat.number}
-                </div>
-                <div className="text-lg opacity-70 mt-2">{stat.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      {/* FOOTER - Modern gradient */}
-      <footer style={{ background: "var(--card)" }} className="py-12 border-t border-gray-700/20">
-        <div className="container mx-auto px-6 text-center">
-
-          <div className="flex justify-center space-x-6 mb-8">
-            {[FaFacebookF, FaTwitter, FaInstagram, FaLinkedinIn].map((Icon, i) => (
-              <div
-                key={i}
-                className="w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 
-                           hover:scale-125 hover:-translate-y-1 cursor-pointer group"
-                style={{ background: "var(--bg)", border: "1px solid var(--border)" }}
-              >
-                <Icon size={20} className="group-hover:scale-110 transition-transform" />
-              </div>
-            ))}
-          </div>
-
-          <p className="text-sm opacity-60">
-            © {new Date().getFullYear()} Green Valley High School Management System.
-            <br className="md:hidden" /> Empowering education through technology.
-          </p>
-          
-          <div className="flex justify-center gap-6 mt-4 text-xs opacity-50">
-            <a href="#" className="hover:opacity-100 transition-opacity">Privacy Policy</a>
-            <a href="#" className="hover:opacity-100 transition-opacity">Terms of Service</a>
-            <a href="#" className="hover:opacity-100 transition-opacity">Contact</a>
+            <div className="mt-4 flex justify-center gap-6 text-xs text-muted">
+              <a href="#" className="transition-opacity hover:opacity-100">
+                Privacy Policy
+              </a>
+              <a href="#" className="transition-opacity hover:opacity-100">
+                Terms of Service
+              </a>
+              <a href="#" className="transition-opacity hover:opacity-100">
+                Contact
+              </a>
+            </div>
           </div>
         </div>
       </footer>

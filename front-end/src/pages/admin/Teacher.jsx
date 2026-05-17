@@ -146,6 +146,13 @@ export default function Teachers() {
     value: count
   }));
 
+  const mastersPercentage =
+    teachers.length > 0
+      ? Math.round(
+          (teachers.filter((t) => t.qualification === "Master's Degree").length / teachers.length) * 100
+        )
+      : 0;
+
   const statsCards = [
     { 
       title: "Total Teachers", 
@@ -170,7 +177,7 @@ export default function Teachers() {
     },
     { 
       title: "Qualified", 
-      value: `${Math.round((teachers.filter(t => t.qualification === "Master's Degree").length / teachers.length) * 100)}%` || "0%", 
+      value: `${mastersPercentage}%`,
       icon: TrendingUp, 
       color: "from-orange-500 to-red-500",
       subtitle: "Master's degree"

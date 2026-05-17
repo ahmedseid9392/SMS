@@ -9,12 +9,11 @@ import {
   CheckCircle,
   Clock,
   TrendingUp,
-  Users,
-  ChevronDown,
-  ChevronUp
+  Users
 } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../api/axios";
+import ChapaPayment from "../../components/payment/ChapaPayment";
 
 const ParentPayments = () => {
   const { user } = useAuth();
@@ -25,7 +24,8 @@ const ParentPayments = () => {
   const [summary, setSummary] = useState(null);
   const [academicYears, setAcademicYears] = useState([]);
   const [selectedYear, setSelectedYear] = useState("");
-  const [expandedChild, setExpandedChild] = useState(null);
+  const [showChapaModal, setShowChapaModal] = useState(false);
+  const [selectedPaymentForChapa, setSelectedPaymentForChapa] = useState(null);
 
   useEffect(() => {
     fetchChildren();
@@ -52,6 +52,16 @@ const ParentPayments = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const openPaymentModal = (payment) => {
+    const totalToPay = (payment.amountDue || 0) + (payment.lateFee || 0);
+    setSelectedPaymentForChapa({
+      month: payment.month,
+      amount: totalToPay,
+      paymentId: payment._id,
+    });
+    setShowChapaModal(true);
   };
 
   const fetchAcademicYears = async () => {
@@ -134,6 +144,9 @@ const ParentPayments = () => {
       minimumFractionDigits: 0
     }).format(amount);
   };
+
+  const pendingPayments = payments.filter((payment) => payment.status !== "paid");
+  const paidPayments = payments.filter((payment) => payment.status === "paid");
 
   if (loading && children.length === 0) {
     return (
@@ -276,15 +289,15 @@ const ParentPayments = () => {
           </div>
         )}
 
-        {/* Payments Table */}
+        {/* Pending Payments */}
         {selectedChild && (
           <div className="rounded-2xl shadow-lg overflow-hidden"
                style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
             
             <div className="p-6 border-b" style={{ borderColor: "var(--border)" }}>
               <h2 className="text-xl font-semibold flex items-center gap-2">
-                <Calendar size={20} />
-                {selectedChild.fullName} - Monthly Payment Details
+                <AlertCircle size={20} className="text-yellow-500" />
+                {selectedChild.fullName} - Pending Payments
               </h2>
             </div>
 
@@ -296,26 +309,26 @@ const ParentPayments = () => {
                     <th className="p-3 border text-center">Due Date</th>
                     <th className="p-3 border text-center">Amount Due</th>
                     <th className="p-3 border text-center">Late Fee</th>
-                    <th className="p-3 border text-center">Discount</th>
-                    <th className="p-3 border text-center">Paid Amount</th>
+                    <th className="p-3 border text-center">Total to Pay</th>
                     <th className="p-3 border text-center">Status</th>
                     <th className="p-3 border text-center">Actions</th>
                    </tr>
                 </thead>
                 <tbody>
-                  {payments.length === 0 ? (
+                  {pendingPayments.length === 0 ? (
                     <tr>
-                      <td colSpan="8" className="text-center p-8">
+                      <td colSpan="7" className="text-center p-8">
                         <div className="flex flex-col items-center gap-2">
                           <CreditCard size={48} className="opacity-30" />
-                          <p className="text-gray-500">No payment records found</p>
+                          <p className="text-gray-500">No pending payments found</p>
                         </div>
                       </td>
                     </tr>
                   ) : (
-                    payments.map((payment) => {
+                    pendingPayments.map((payment) => {
                       const statusBadge = getStatusBadge(payment.status);
                       const StatusIcon = statusBadge.icon;
+                      const totalToPay = (payment.amountDue || 0) + (payment.lateFee || 0);
                       
                       return (
                         <tr key={payment._id} className="border-b">
@@ -325,12 +338,7 @@ const ParentPayments = () => {
                           <td className="p-3 text-center text-red-600">
                             {payment.lateFee > 0 ? formatCurrency(payment.lateFee) : "-"}
                           </td>
-                          <td className="p-3 text-center text-green-600">
-                            {payment.discountAmount > 0 ? formatCurrency(payment.discountAmount) : "-"}
-                          </td>
-                          <td className="p-3 text-center font-semibold">
-                            {payment.amountPaid > 0 ? formatCurrency(payment.amountPaid) : "-"}
-                          </td>
+                          <td className="p-3 text-center font-semibold text-orange-600">{formatCurrency(totalToPay)}</td>
                           <td className="p-3 text-center">
                             <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${statusBadge.color}`}>
                               <StatusIcon size={12} />
@@ -338,19 +346,83 @@ const ParentPayments = () => {
                             </span>
                           </td>
                           <td className="p-3 text-center">
-                            {payment.status === "paid" && payment.receiptNumber && (
-                              <button
-                                onClick={() => downloadReceipt(payment)}
-                                className="p-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-colors"
-                                title="Download Receipt"
-                              >
-                                <Download size={16} />
-                              </button>
-                            )}
+                            <button
+                              onClick={() => openPaymentModal(payment)}
+                              className="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors"
+                            >
+                              Pay Now
+                            </button>
                           </td>
                         </tr>
                       );
                     })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Payment History */}
+        {selectedChild && (
+          <div className="rounded-2xl shadow-lg overflow-hidden"
+               style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+            <div className="p-6 border-b" style={{ borderColor: "var(--border)" }}>
+              <h2 className="text-xl font-semibold flex items-center gap-2">
+                <Calendar size={20} />
+                {selectedChild.fullName} - Payment History
+              </h2>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700">
+                    <th className="p-3 border text-left">Month</th>
+                    <th className="p-3 border text-center">Paid Date</th>
+                    <th className="p-3 border text-center">Amount Paid</th>
+                    <th className="p-3 border text-center">Late Fee</th>
+                    <th className="p-3 border text-center">Discount</th>
+                    <th className="p-3 border text-center">Receipt</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paidPayments.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" className="text-center p-8">
+                        <div className="flex flex-col items-center gap-2">
+                          <CheckCircle size={48} className="opacity-30" />
+                          <p className="text-gray-500">No payment history found</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    paidPayments.map((payment) => (
+                      <tr key={payment._id} className="border-b">
+                        <td className="p-3 font-medium">{payment.month}</td>
+                        <td className="p-3 text-center">{formatDate(payment.paidDate)}</td>
+                        <td className="p-3 text-center font-semibold text-green-600">
+                          {formatCurrency(payment.amountPaid)}
+                        </td>
+                        <td className="p-3 text-center">{formatCurrency(payment.lateFee)}</td>
+                        <td className="p-3 text-center">
+                          {payment.discountAmount > 0 ? formatCurrency(payment.discountAmount) : "-"}
+                        </td>
+                        <td className="p-3 text-center">
+                          {payment.receiptNumber ? (
+                            <button
+                              onClick={() => downloadReceipt(payment)}
+                              className="p-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-colors"
+                              title="Download Receipt"
+                            >
+                              <Download size={16} />
+                            </button>
+                          ) : (
+                            "-"
+                          )}
+                        </td>
+                      </tr>
+                    ))
                   )}
                 </tbody>
               </table>
@@ -375,6 +447,22 @@ const ParentPayments = () => {
           </ul>
         </div>
       </div>
+
+      {showChapaModal && selectedPaymentForChapa && selectedChild && (
+        <ChapaPayment
+          studentId={selectedChild._id}
+          academicYear={selectedYear}
+          month={selectedPaymentForChapa.month}
+          amount={selectedPaymentForChapa.amount}
+          email={user?.email}
+          onSuccess={() => {
+            setShowChapaModal(false);
+            fetchPayments();
+            toast.success("Payment successful! Your child's payment has been confirmed.");
+          }}
+          onCancel={() => setShowChapaModal(false)}
+        />
+      )}
     </Layout>
   );
 };
