@@ -16,7 +16,7 @@ const Layout = ({ children }) => {
       data-theme={theme}
       className="min-h-screen flex flex-col transition-all duration-500"
       style={{
-        background: "var(--bg)",
+        background: "transparent",
         color: "var(--text)",
       }}
     >
@@ -33,13 +33,15 @@ const Layout = ({ children }) => {
 
         {/* MAIN CONTENT */}
         <main
-          className="flex-1 p-6 overflow-y-auto transition-all duration-500 min-h-[calc(100vh-73px)]"
+          className="flex-1 overflow-y-auto transition-all duration-500 min-h-[calc(100vh-80px)]"
           style={{
-            background: "var(--bg)",
+            background: "transparent",
             color: "var(--text)",
           }}
         >
-          {children}
+          <div className="mx-auto w-full max-w-[1600px] p-4 md:p-6 xl:p-8">
+            {children}
+          </div>
         </main>
       </div>
     </div>

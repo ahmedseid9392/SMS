@@ -5,6 +5,22 @@ import Student from '../models/Student.model.js';
 import PaymentSettings from '../models/PaymentSettings.model.js';
 import { createNotification } from './notificationController.js';
 
+const resolveAccessibleStudent = async (requestUser, studentId) => {
+  if (!studentId) return null;
+
+  if (requestUser.role === "PARENT") {
+    return await Student.findOne({ _id: studentId, parent: requestUser.id });
+  }
+
+  if (requestUser.role === "STUDENT") {
+    return requestUser.id.toString() === studentId.toString()
+      ? await Student.findById(studentId)
+      : null;
+  }
+
+  return await Student.findById(studentId);
+};
+
 // Initialize Chapa payment (with fallback to mock)
 export const initializePayment = async (req, res) => {
   try {
@@ -27,9 +43,9 @@ export const initializePayment = async (req, res) => {
     }
     
     // Get student details
-    const student = await Student.findById(studentId);
+    const student = await resolveAccessibleStudent(req.user, studentId);
     if (!student) {
-      return res.status(404).json({ message: "Student not found" });
+      return res.status(403).json({ message: "Access denied" });
     }
     
     // Generate unique transaction reference

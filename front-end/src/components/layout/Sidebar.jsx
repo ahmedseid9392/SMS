@@ -1,56 +1,66 @@
 import React, { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { useTheme } from "../../context/ThemeContext";
-import { Menu, X, User, LayoutDashboard, Users,CreditCard, School, BookOpen, UserCheck, GraduationCap, Calendar, ClipboardList, Clock, Bell, Award, FileText } from "lucide-react";
+import {
+  Menu,
+  X,
+  User,
+  LayoutDashboard,
+  Users,
+  CreditCard,
+  School,
+  BookOpen,
+  UserCheck,
+  GraduationCap,
+  Calendar,
+  ClipboardList,
+  Clock,
+  Award,
+  FileText,
+} from "lucide-react";
 
 const Sidebar = () => {
   const { user } = useAuth();
-  const { theme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
 
-  const commonLinks = [
-    { to: "/profile", label: "My Profile", icon: User, color: "from-blue-500 to-cyan-500" }
-  ];
+  const commonLinks = [{ to: "/profile", label: "My Profile", icon: User }];
 
   const adminLinks = [
     ...commonLinks,
-    { to: "/admin", label: "Dashboard", icon: LayoutDashboard, color: "from-purple-500 to-pink-500" },
-    { to: "/admin/students", label: "Students", icon: Users, color: "from-green-500 to-emerald-500" },
-    { to: "/admin/teachers", label: "Teachers", icon: School, color: "from-orange-500 to-red-500" },
-    { to: "/admin/courses", label: "Courses", icon: BookOpen, color: "from-blue-500 to-indigo-500" },
-    { to: "/admin/assignment", label: "Teacher Assignment", icon: UserCheck, color: "from-teal-500 to-cyan-500" },
-    { to: "/admin/classes", label: "Classes", icon: GraduationCap, color: "from-yellow-500 to-orange-500" },
-    { to: "/admin/grades", label: "Grade", icon: ClipboardList, color: "from-red-500 to-pink-500" },
-    { to: "/admin/payments", label: "Payments", icon: CreditCard, color: "from-green-500 to-emerald-500" },
-    { to: "/admin/academic-years", label: "Academic Years", icon: Calendar, color: "from-teal-500 to-cyan-500" },
+    { to: "/admin", label: "Dashboard", icon: LayoutDashboard },
+    { to: "/admin/students", label: "Students", icon: Users },
+    { to: "/admin/teachers", label: "Teachers", icon: School },
+    { to: "/admin/courses", label: "Courses", icon: BookOpen },
+    { to: "/admin/assignment", label: "Teacher Assignment", icon: UserCheck },
+    { to: "/admin/classes", label: "Classes", icon: GraduationCap },
+    { to: "/admin/grades", label: "Grade", icon: ClipboardList },
+    { to: "/admin/payments", label: "Payments", icon: CreditCard },
+    { to: "/admin/academic-years", label: "Academic Years", icon: Calendar },
   ];
 
   const teacherLinks = [
     ...commonLinks,
-    { to: "/teacher", label: "Dashboard", icon: LayoutDashboard, color: "from-purple-500 to-pink-500" },
-    { to: "/teacher/classes", label: "My Classes", icon: BookOpen, color: "from-blue-500 to-indigo-500" },
-    { to: "/teacher/attendance", label: "Attendance", icon: Calendar, color: "from-green-500 to-emerald-500" },
-    { to: "/teacher/grades", label: "Grades", icon: Award, color: "from-yellow-500 to-orange-500" },
+    { to: "/teacher", label: "Dashboard", icon: LayoutDashboard },
+    { to: "/teacher/classes", label: "My Classes", icon: BookOpen },
+    { to: "/teacher/attendance", label: "Attendance", icon: Calendar },
+    { to: "/teacher/grades", label: "Grades", icon: Award },
   ];
 
   const studentLinks = [
     ...commonLinks,
-    { to: "/student", label: "Dashboard", icon: LayoutDashboard, color: "from-purple-500 to-pink-500" },
-    { to: "/student/results", label: "Results", icon: Award, color: "from-yellow-500 to-orange-500" },
-    { to: "/student/assignments", label: "Assignments", icon: FileText, color: "from-blue-500 to-indigo-500" },
-    { to: "/student/timetable", label: "Timetable", icon: Clock, color: "from-green-500 to-emerald-500" },
-    { to: "/student/payments", label: "Payments", icon: CreditCard, color: "from-green-500 to-emerald-500" },
+    { to: "/student", label: "Dashboard", icon: LayoutDashboard },
+    { to: "/student/results", label: "Results", icon: Award },
+    { to: "/student/assignments", label: "Assignments", icon: FileText },
+    { to: "/student/timetable", label: "Timetable", icon: Clock },
+    { to: "/student/payments", label: "Payments", icon: CreditCard },
   ];
 
   const parentLinks = [
     ...commonLinks,
-    { to: "/parent", label: "Dashboard", icon: LayoutDashboard, color: "from-purple-500 to-pink-500" },
-    { to: "/parent/results", label: "Results", icon: Award, color: "from-yellow-500 to-orange-500" },
-    { to: "/parent/assignments", label: "Assignments", icon: FileText, color: "from-blue-500 to-indigo-500" },
-    { to: "/parent/attendance", label: "Attendance", icon: Calendar, color: "from-green-500 to-emerald-500" },
-    { to: "/parent/notifications", label: "Notifications", icon: Bell, color: "from-red-500 to-pink-500" },
-    { to: "/parent/payments", label: "Payments", icon: CreditCard, color: "from-green-500 to-emerald-500" },
+    { to: "/parent", label: "Dashboard", icon: LayoutDashboard },
+    { to: "/parent/results", label: "Results", icon: Award },
+    { to: "/parent/notifications", label: "Notifications", icon: FileText },
+    { to: "/parent/payments", label: "Payments", icon: CreditCard },
   ];
 
   const links =
@@ -64,134 +74,97 @@ const Sidebar = () => {
 
   return (
     <>
-      {/* Toggle button for mobile - positioned below navbar */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed top-20 left-4 z-50 lg:hidden p-3 rounded-xl shadow-lg transition-all duration-300 hover:scale-105 backdrop-blur-lg"
-        style={{ 
-          background: "var(--card)", 
-          color: "var(--text)", 
-          border: "1px solid var(--border)",
-          boxShadow: "0 4px 15px rgba(0, 0, 0, 0.1)"
-        }}
+        className="glass-panel fixed left-4 top-24 z-50 rounded-2xl p-3 transition-all duration-300 hover:scale-105 lg:hidden"
+        style={{ color: "var(--text)" }}
       >
         {isOpen ? <X size={22} /> : <Menu size={22} />}
       </button>
 
-      {/* Sidebar - positioned with top margin to clear navbar */}
       <aside
-        className={`fixed top-[73px] left-0 bottom-0 z-40 w-72 transition-all duration-500 ease-in-out lg:translate-x-0 lg:static lg:top-auto ${
+        className={`fixed bottom-0 left-0 z-40 w-72 transition-all duration-500 ease-in-out lg:translate-x-0 lg:static ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
         style={{
-          background: "var(--card)",
           color: "var(--text)",
-          borderRight: "1px solid var(--border)",
-          boxShadow: "4px 0 20px rgba(0, 0, 0, 0.05)",
-          height: "calc(100vh - 73px)", // Adjust height to account for navbar
+          top: "88px",
+          height: "calc(100vh - 96px)",
         }}
       >
-        {/* Scrollable content area */}
-        <div className="h-full flex flex-col">
-          {/* User Profile Summary - Fixed at top */}
-          <div className="flex-shrink-0 px-5 pt-6 pb-4 border-b" style={{ borderColor: "var(--border)" }}>
+        <div className="glass-panel mx-4 flex h-full flex-col overflow-hidden rounded-[1.8rem]">
+          <div className="flex-shrink-0 border-b px-5 pb-4 pt-6" style={{ borderColor: "var(--border)" }}>
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl">
+              <div
+                className="flex h-12 w-12 items-center justify-center rounded-2xl text-xl font-bold text-white"
+                style={{ background: "linear-gradient(135deg, var(--primary), #0ea5e9)" }}
+              >
                 {user?.name?.charAt(0) || user?.role?.charAt(0) || "U"}
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold truncate">{user?.name || "User"}</p>
-                <p className="text-xs opacity-60 truncate">{user?.role || "Guest"}</p>
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-semibold">{user?.name || "User"}</p>
+                <p className="text-muted truncate text-xs">{user?.role || "Guest"}</p>
               </div>
             </div>
           </div>
 
-          {/* Navigation Links - Scrollable area */}
-          <div className="flex-1 overflow-y-auto px-5 py-4 custom-scrollbar">
-            <nav className="space-y-2">
+          <div className="custom-scrollbar flex-1 overflow-y-auto px-5 py-4">
+            <nav className="space-y-2.5">
               {links.map((link) => (
                 <NavLink
                   key={link.to}
                   to={link.to}
                   onClick={() => setIsOpen(false)}
                   className={({ isActive }) =>
-                    `group relative flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
-                      isActive
-                        ? "shadow-lg scale-[1.02]"
-                        : "hover:scale-[1.02] hover:shadow-md"
+                    `group relative flex items-center gap-3 rounded-2xl px-4 py-3 transition-all duration-300 ${
+                      isActive ? "scale-[1.01] shadow-lg" : "hover:translate-x-1"
                     }`
                   }
                   style={({ isActive }) => ({
-                    background: isActive ? "var(--primary)" : "var(--bg)",
+                    background: isActive ? "linear-gradient(135deg, var(--primary), #0ea5e9)" : "rgba(255,255,255,0)",
                     color: isActive ? "#fff" : "var(--text)",
-                    border: "1px solid var(--border)",
+                    border: `1px solid ${isActive ? "transparent" : "var(--border)"}`,
+                    boxShadow: isActive ? "var(--shadow-sm)" : "none",
                   })}
                 >
-                  <div 
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 ${
-                      !link.icon ? "" : "group-hover:scale-110"
-                    }`}
+                  <div
+                    className="flex h-9 w-9 items-center justify-center rounded-xl transition-all duration-300 group-hover:scale-110"
                     style={{
-                      background: "var(--card)",
+                      background: "var(--bg-elevated)",
                       border: "1px solid var(--border)",
                     }}
                   >
-                    <link.icon 
-                      size={18} 
-                      className="transition-all duration-300"
-                      style={{ color: "currentColor" }}
-                    />
+                    <link.icon size={18} style={{ color: "currentColor" }} />
                   </div>
-                  
-                  <span className="font-medium text-sm">{link.label}</span>
+                  <span className="text-sm font-medium">{link.label}</span>
                 </NavLink>
               ))}
             </nav>
           </div>
 
-          {/* Footer note - Fixed at bottom */}
-          <div className="flex-shrink-0 px-5 pb-6 pt-4 mt-auto border-t" style={{ borderColor: "var(--border)" }}>
-            <div 
-              className="p-3 rounded-lg text-center text-xs opacity-50 transition-all duration-300 hover:opacity-100"
-              style={{ border: "1px solid var(--border)" }}
+          <div className="mt-auto flex-shrink-0 border-t px-5 pb-6 pt-4" style={{ borderColor: "var(--border)" }}>
+            <div
+              className="rounded-2xl p-4 text-center text-xs transition-all duration-300 hover:opacity-100"
+              style={{ border: "1px solid var(--border)", background: "var(--bg-soft)", color: "var(--text-muted)" }}
             >
               <p>Green Valley School</p>
-              <p className="text-[10px] mt-1">v2.0.0</p>
+              <p className="mt-1 text-[10px]">v2.0.0</p>
             </div>
           </div>
         </div>
       </aside>
 
-      {/* Overlay - Smooth fade animation */}
       {isOpen && (
         <div
           onClick={() => setIsOpen(false)}
-          className="fixed inset-0 z-30 lg:hidden animate-fadeIn"
-          style={{ 
+          className="fixed inset-0 z-30 animate-fadeIn lg:hidden"
+          style={{
             background: "rgba(0,0,0,0.5)",
             backdropFilter: "blur(2px)",
-            top: "73px", // Start overlay below navbar
+            top: "88px",
           }}
         />
       )}
-
-      {/* Custom scrollbar styles - Add to your global CSS or use style tag */}
-      <style jsx>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: var(--border);
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: var(--primary);
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: var(--text);
-        }
-      `}</style>
     </>
   );
 };

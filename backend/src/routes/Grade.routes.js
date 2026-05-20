@@ -15,6 +15,8 @@ import {
   getStudentSemesterTotals,
   getStudentReleasedResults,
   getStudentAcademicYears,
+  getParentReleasedResults,
+  getParentAcademicYears,
   requestGradeReview,
   checkSemester1Completion
 } from '../controllers/Grade.controller.js';
@@ -44,6 +46,8 @@ router.post('/student/results/request-review', protect, requestGradeReview);
 
 // Parent routes
 router.get('/parent/grades', protect, getParentGrades);
+router.get('/parent/results', protect, getParentReleasedResults);
+router.get('/parent/results/academic-years', protect, getParentAcademicYears);
 
 // Student grade view
 router.get('/student/grades', protect, getStudentGrades);

@@ -3,11 +3,9 @@ import React from "react";
 const ThemedCard = ({ children, className }) => {
   return (
     <div
-      className={`p-6 rounded-xl shadow-md transition ${className}`}
+      className={`surface-card rounded-[1.5rem] p-6 transition-all duration-300 hover:-translate-y-0.5 ${className || ""}`}
       style={{
-        background: "var(--card)",
         color: "var(--text)",
-        border: "1px solid var(--border)"
       }}
     >
       {children}

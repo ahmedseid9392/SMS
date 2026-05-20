@@ -4,6 +4,22 @@ import StudentPaymentSummary from '../models/StudentPaymentSummary.model.js';
 import PaymentSettings from '../models/PaymentSettings.model.js';
 import { createNotification } from './notificationController.js';
 
+const resolveAccessibleStudent = async (requestUser, studentId) => {
+  if (!studentId) return null;
+
+  if (requestUser.role === "PARENT") {
+    return await Student.findOne({ _id: studentId, parent: requestUser.id });
+  }
+
+  if (requestUser.role === "STUDENT") {
+    return requestUser.id.toString() === studentId.toString()
+      ? await Student.findById(studentId)
+      : null;
+  }
+
+  return await Student.findById(studentId);
+};
+
 // Initialize mock payment
 export const initializeMockPayment = async (req, res) => {
   try {
@@ -18,13 +34,21 @@ export const initializeMockPayment = async (req, res) => {
         message: "Missing required fields: studentId, academicYear, month" 
       });
     }
+
+    const student = await resolveAccessibleStudent(req.user, studentId);
+    if (!student) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied",
+      });
+    }
     
     // Generate fake transaction reference
     const tx_ref = `mock-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
     
     // Find and update or create payment record
     const payment = await Payment.findOneAndUpdate(
-      { student: studentId, academicYear, month: month },
+      { student: student._id, academicYear, month: month },
       { 
         $set: { 
           transactionId: tx_ref,

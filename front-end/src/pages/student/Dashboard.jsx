@@ -3,9 +3,10 @@ import { useNavigate } from "react-router-dom";
 import Layout from "../../components/layout/Layout";
 import ThemedCard from "../../components/ui/ThemedCard";
 import { useAuth } from "../../context/AuthContext";
-//import  getStudentGrades  from "../../api/gradeService";
-//import { getStudentAssignments } from "../../api/assignmentService";
-//import { getStudentAttendance } from "../../api/attendanceService";
+import {
+  getStudentAcademicYears,
+  getStudentReleasedResults,
+} from "../../api/gradeService";
 import { 
   BookOpen, 
   Award, 
@@ -37,39 +38,51 @@ const StudentDashboard = () => {
   });
   const [recentGrades, setRecentGrades] = useState([]);
   const [upcomingAssignments, setUpcomingAssignments] = useState([]);
-  const [attendanceData, setAttendanceData] = useState([]);
   const [recentActivities, setRecentActivities] = useState([]);
 
   useEffect(() => {
     loadDashboardData();
   }, []);
 
+  const getStudentAssignmentsData = () => {
+    const source = user?.role === "PARENT" ? user?.child : user;
+    return source?.assignments || [];
+  };
+
+  const getStudentAttendanceData = () => {
+    const source = user?.role === "PARENT" ? user?.child : user;
+    return source?.attendance || [];
+  };
+
+  const getStudentGradesData = async () => {
+    const academicYearsResponse = await getStudentAcademicYears();
+    const academicYears =
+      academicYearsResponse.academicYears ||
+      academicYearsResponse.data?.academicYears ||
+      [];
+
+    if (academicYears.length === 0) {
+      return [];
+    }
+
+    const releasedResults = await getStudentReleasedResults(academicYears[0]._id, 1);
+    return releasedResults.results || releasedResults.data?.results || [];
+  };
+
   const loadDashboardData = async () => {
     setLoading(true);
     try {
-      // Fetch grades
-      const gradesRes = await getStudentGrades();
-      const grades = gradesRes.grades || gradesRes.data?.grades || [];
-      
-      // Fetch assignments
-      const assignmentsRes = await getStudentAssignments();
-      const assignments = assignmentsRes.assignments || assignmentsRes.data?.assignments || [];
-      
-      // Fetch attendance
-      const attendanceRes = await getStudentAttendance();
-      const attendance = attendanceRes.attendance || attendanceRes.data?.attendance || [];
+      const grades = await getStudentGradesData();
+      const assignments = getStudentAssignmentsData();
+      const attendance = getStudentAttendanceData();
       
       // Calculate statistics
       let totalScore = 0;
       let gradedCourses = 0;
       
       grades.forEach(grade => {
-        if (grade.sem1?.total) {
-          totalScore += grade.sem1.total;
-          gradedCourses++;
-        }
-        if (grade.sem2?.total) {
-          totalScore += grade.sem2.total;
+        if (typeof grade.total === "number") {
+          totalScore += grade.total;
           gradedCourses++;
         }
       });
@@ -97,24 +110,24 @@ const StudentDashboard = () => {
       
       // Get recent grades (last 5)
       const recent = grades.slice(0, 5).map(grade => ({
-        id: grade._id,
-        course: grade.course?.name || "Course",
-        score: grade.sem1?.total || grade.sem2?.total || 0,
-        grade: getGradeLetter(grade.sem1?.total || grade.sem2?.total || 0),
-        semester: grade.sem1?.total ? "Sem 1" : "Sem 2"
+        id: grade.courseId || grade._id,
+        course: grade.courseName || grade.course?.name || "Course",
+        score: grade.total || 0,
+        grade: getGradeLetter(grade.total || 0),
+        semester: "Sem 1"
       }));
       setRecentGrades(recent);
       
       // Get upcoming assignments (next 5)
       const upcoming = assignments
-        .filter(a => !a.submitted)
+        .filter(a => a.status !== "Submitted" && a.status !== "Completed")
         .slice(0, 5)
         .map(assignment => ({
           id: assignment._id,
           title: assignment.title,
-          course: assignment.course?.name,
-          dueDate: formatDate(assignment.dueDate),
-          priority: getPriority(assignment.dueDate)
+          course: assignment.course?.name || assignment.course || "Course",
+          dueDate: formatDate(assignment.dueDate || assignment.due),
+          priority: getPriority(assignment.dueDate || assignment.due)
         }));
       setUpcomingAssignments(upcoming);
       
@@ -173,6 +186,13 @@ const StudentDashboard = () => {
         { id: 3, title: "Physics Lab Report", course: "Physics", dueDate: "Jan 20, 2025", priority: "low" },
         { id: 4, title: "Chemistry Assignment", course: "Chemistry", dueDate: "Jan 25, 2025", priority: "medium" }
       ]);
+
+      setStats({
+        totalCourses: 0,
+        averageGrade: 0,
+        attendanceRate: 95,
+        pendingAssignments: 0,
+      });
     } finally {
       setLoading(false);
     }
@@ -191,6 +211,7 @@ const StudentDashboard = () => {
   };
 
   const getPriority = (dueDate) => {
+    if (!dueDate) return "low";
     const today = new Date();
     const due = new Date(dueDate);
     const diffDays = Math.ceil((due - today) / (1000 * 60 * 60 * 24));

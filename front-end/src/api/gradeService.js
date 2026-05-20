@@ -227,4 +227,18 @@ export const requestGradeReview = async (gradeId, reason) => {
   }
 };
 
+export const getParentReleasedResults = async (studentId, academicYearId, semester) => {
+  const response = await api.get("/parent/results", {
+    params: { studentId, academicYearId, semester },
+  });
+  return response.data;
+};
+
+export const getParentAcademicYears = async (studentId) => {
+  const response = await api.get("/parent/results/academic-years", {
+    params: { studentId },
+  });
+  return response.data;
+};
+
 

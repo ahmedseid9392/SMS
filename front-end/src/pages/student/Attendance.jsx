@@ -6,6 +6,7 @@ const AttendanceView = () => {
   const { user } = useAuth();
   const data = user.role === "PARENT" ? user.child : user;
   const isParent = user.role === "PARENT";
+  const attendance = data?.attendance || [];
 
   return (
     <Layout>
@@ -23,7 +24,7 @@ const AttendanceView = () => {
               </tr>
             </thead>
             <tbody>
-              {data.attendance.map((record, index) => (
+              {attendance.map((record, index) => (
                 <tr key={index} className="border-b">
                   <td className="px-4 py-3">{record.date}</td>
                   <td className="px-4 py-3 text-center font-medium">
@@ -35,7 +36,7 @@ const AttendanceView = () => {
               ))}
             </tbody>
           </table>
-          {data.attendance.length === 0 && (
+          {attendance.length === 0 && (
             <p className="text-center py-4 text-gray-500">No attendance records yet.</p>
           )}
         </div>

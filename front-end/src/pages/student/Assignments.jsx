@@ -6,6 +6,7 @@ const Assignments = () => {
   const { user } = useAuth();
   const data = user.role === "PARENT" ? user.child : user;
   const isParent = user.role === "PARENT";
+  const assignments = data?.assignments || [];
 
   return (
     <Layout>
@@ -15,7 +16,7 @@ const Assignments = () => {
         </h1>
 
         <div className="grid md:grid-cols-2 gap-6">
-          {data.assignments.map((assignment, index) => (
+          {assignments.map((assignment, index) => (
             <div key={index} className="bg-white p-6 rounded-xl shadow-lg">
               <h3 className="text-xl font-semibold mb-2">{assignment.title}</h3>
               <p className="text-gray-600 mb-2">Due: {assignment.due}</p>
@@ -24,7 +25,7 @@ const Assignments = () => {
               </p>
             </div>
           ))}
-          {data.assignments.length === 0 && (
+          {assignments.length === 0 && (
             <p className="col-span-2 text-center py-4 text-gray-500">No assignments available yet.</p>
           )}
         </div>

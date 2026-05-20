@@ -9,6 +9,11 @@ const studentSchema = new mongoose.Schema(
     role: { type: String, default: "STUDENT" },
     grade: { type: Number, required: true },
     section: { type: String, required: true },
+    parent: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Parent",
+      default: null,
+    },
     stream: {
       type: String,
       enum: ["Natural", "Social"],

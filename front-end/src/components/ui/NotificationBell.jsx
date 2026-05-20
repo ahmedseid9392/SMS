@@ -3,14 +3,31 @@ import { Bell, Check, Trash2, X, AlertCircle, CheckCircle, Info, Award, Calendar
 import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 
 const NotificationBell = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [loading, setLoading] = useState(false);
   const dropdownRef = useRef(null);
+
+  const fetchNotifications = async () => {
+    try {
+      const response = await api.get('/notifications', {
+        params: { limit: 20 }
+      });
+      if (response.data.success) {
+        setNotifications(response.data.notifications || []);
+        setUnreadCount(response.data.unreadCount || 0);
+      }
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+      setNotifications([]);
+      setUnreadCount(0);
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -31,22 +48,6 @@ const NotificationBell = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
- const fetchNotifications = async () => {
-  try {
-    const response = await api.get('/notifications', {
-      params: { limit: 20 }
-    });
-    if (response.data.success) {
-      setNotifications(response.data.notifications || []);
-      setUnreadCount(response.data.unreadCount || 0);
-    }
-  } catch (error) {
-    console.error("Error fetching notifications:", error);
-    // Don't show error toast for 404 - just set empty state
-    setNotifications([]);
-    setUnreadCount(0);
-  }
-};
   const markAsRead = async (notificationId) => {
     try {
       await api.put(`/notifications/${notificationId}/read`);
@@ -194,7 +195,7 @@ const NotificationBell = () => {
             <button
               onClick={() => {
                 setIsOpen(false);
-                // Navigate to notifications page if needed
+                navigate(user?.role === "PARENT" ? "/parent/notifications" : "/student/notifications");
               }}
               className="text-xs text-blue-500 hover:text-blue-600"
             >
